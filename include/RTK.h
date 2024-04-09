@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RTK_H
+#define RTK_H
 #include"DataClassSet.h"
 #include<iostream>
 #include<fstream>
@@ -8,7 +9,7 @@
 #include"sockets.h"
 
 using namespace std;
-/*****************   主要函数   *********************/
+/*****************    RTK main Func  *********************/
 int RtkObsSyn(FILE* fb, FILE* fr, RTKDATA* rawdata, POSRES* BasPos, POSRES* RovPos);
 int RtkObsSyn(SOCKET& bIp, SOCKET& rIp, RTKDATA* rawdata, POSRES* BasPos, POSRES* RovPos);
 void CalStaSinDif(EPOCHOBSDATA* BasEpk, EPOCHOBSDATA* RovEpk, POSRES* BasPos, POSRES* RovPos, SDEPOCHOBS* SdObs);
@@ -20,7 +21,7 @@ void EKFinitial(RTKEKF* e, DDCEPOCHOBS* DDObs, POSRES* Sppr, XMatrix& ekfP);
 void EKF(RTKEKF* e, DDCEPOCHOBS* d, POSRES* r, POSRES* b, XMatrix& P, EPOCHOBSDATA* RovObs, EPOCHOBSDATA* BasObs);
 void TwiceUpdate(XMatrix& x_1, XMatrix& P, double fixedN[]);
 
-/*****************   脚本函数（工具）   *********************/
+/*****************   RTK script Func(tool)    *********************/
 void RtkAlignDataIni(RtkAlignData* a);
 void CalStaSatDis(double Pos_r[], EPOCHOBSDATA* Obs, DDCOBS* DDObs, RtkAlignData* DisData);
 int CalRefDis(double Pos_r[], EPOCHOBSDATA* Obs, int RefPrn[], RtkAlignData* Data);
@@ -51,3 +52,4 @@ void EkfPGetQnn(XMatrix P, double Qnn[]);
 void EkfXGetfN(XMatrix x, double fN[]);
 void RecordPrn(DDCEPOCHOBS* o, int r[], GNSSSys s[]);
 bool SearchPrn(DDCEPOCHOBS d, int Prn, GNSSSys Sys);
+#endif

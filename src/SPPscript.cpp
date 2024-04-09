@@ -56,9 +56,9 @@ bool JudgeEphEffect(GNSSSys sys, GPSTIME obsTime, GPSEPHREC RealEph)
 		BDST2GPST(&UniT, &obsTime);
 	}
 	double DT = GPSTMius(&UniT, &RealEph.TOE);
-	if (fabs(DT) > 7500)//不能管时间先后，故取绝对值，其要求小于两小时加300s
+	if (fabs(DT) > 7500)//It is not possible to care about the time sequence, so the absolute value is taken, and its requirement is less than two hours plus 300s
 	{
-		//cout << "星历数据过期" << endl;
+		//cout << "Ephemeris  overdue!" << endl;
 		return false;
 	}
 	else return true;
@@ -70,9 +70,8 @@ double Countvk(double e, double  Ek)
 	return atan2(Modecule, Denominator);
 }
 void SPPBelement(double pos_r[], double pos_s[], double vec[])
-/*计算B矩阵里面特定元素*/
 {
-	double rho = 0;/*初始化rho*/
+	double rho = 0;
 	CalRho(pos_r, pos_s, rho);
 	for (int i = 0; i < 3; i++)
 	{
@@ -87,7 +86,7 @@ void SPPintputB(XMatrix& B_re, EPOCHOBSDATA* Epoch, double pos_r[])
 	int Bindex = 0;
 	for (int i = 0; i < Epoch->SatNum; i++)
 	{
-		if (!Epoch->SatPvT[i].Valid)//无效卫星PVT直接跳过
+		if (!Epoch->SatPvT[i].Valid)//skip useless sat
 		{
 			continue;
 		}
@@ -99,7 +98,7 @@ void SPPintputB(XMatrix& B_re, EPOCHOBSDATA* Epoch, double pos_r[])
 		else if (Sys == GPS) { B(Bindex, 3) = 1; B(Bindex, 4) = 0; countGPS++; }
 		Bindex++;
 	}
-	/*矩阵重构*/
+	/*reset matrix*/
 	if (countBDS == 0)
 	{
 		B.MatrixResize(Bindex, 4);
@@ -120,10 +119,10 @@ void SPPinputW(XMatrix& W_r, EPOCHOBSDATA* Epoch, double pos_r[])
 {
 	int WIndex = 0;
 	XMatrix W;
-	/*用的是消电离层组合，所以GPS无TGD，BDS用TGD1*/
+	/*It uses an ionospheric elimination combination, so there is no TGD for GPS and TGD1 for BDS*/
 	for (int i = 0; i < Epoch->SatNum; i++)
 	{
-		if (!Epoch->SatPvT[i].Valid)//无效卫星PVT直接跳过
+		if (!Epoch->SatPvT[i].Valid)//Invalid satellite PVT is skipped directly
 		{
 			continue;
 		}
@@ -146,11 +145,11 @@ void SPPinputW(XMatrix& W_r, EPOCHOBSDATA* Epoch, double pos_r[])
 		if (Sys == BDS)
 		{
 			double Coe = BDS_B1I * BDS_B1I / (BDS_B1I * BDS_B1I - BDS_B3I * BDS_B3I);
-			W(WIndex, 0) = Epoch->ComObs[i].PIF - (rho - CLight * Epoch->SatPvT[i].SatClkOft + Epoch->SatPvT[i].TropCorr + CLight * Coe * Epoch->SatPvT[i].Tgd1);/*北斗要加群延改正*/
+			W(WIndex, 0) = Epoch->ComObs[i].PIF - (rho - CLight * Epoch->SatPvT[i].SatClkOft + Epoch->SatPvT[i].TropCorr + CLight * Coe * Epoch->SatPvT[i].Tgd1);/*Beidou should be corrected by adding a group of delays*/
 		}
 		else if (Sys == GPS)
 		{
-			W(WIndex, 0) = Epoch->ComObs[i].PIF - (rho - CLight * Epoch->SatPvT[i].SatClkOft + Epoch->SatPvT[i].TropCorr);/*GPS不加群延改正*/
+			W(WIndex, 0) = Epoch->ComObs[i].PIF - (rho - CLight * Epoch->SatPvT[i].SatClkOft + Epoch->SatPvT[i].TropCorr);/*GPS no group of delays*/
 		}
 		WIndex++;
 	}
@@ -176,7 +175,7 @@ void SPVInputW(XMatrix& W_r, EPOCHOBSDATA* Epoch, POSRES* Res)
 	int WIndex = 0;
 	for (int i = 0; i < Epoch->SatNum; i++)
 	{
-		if (!Epoch->SatPvT[i].Valid)//无效卫星PVT直接跳过
+		if (!Epoch->SatPvT[i].Valid)
 		{
 			continue;
 		}
@@ -193,7 +192,7 @@ void SPVInputB(XMatrix& B_r, EPOCHOBSDATA* Epoch, POSRES* Res)
 	int Bindex = 0;
 	for (int i = 0; i < Epoch->SatNum; i++)
 	{
-		if (!Epoch->SatPvT[i].Valid)//无效卫星PVT直接跳过
+		if (!Epoch->SatPvT[i].Valid)
 		{
 			continue;
 		}
@@ -210,8 +209,8 @@ void InputP(int Prow, EPOCHOBSDATA* Epoch, bool flag,XMatrix &P_r)
 {
 	XMatrix P;
 	int PIndex = 0;
-	int Cor_A = 0.5;
-	int Cor_B = 4;
+	double Cor_A = 0.5;
+	double Cor_B = 4.0;
 	int Sig0 = 1;
 	if (!flag)
 	{
@@ -249,9 +248,9 @@ void EarthRotateCorrect(GNSSSys sys, SATMIDRES* Satpos, double Pos[])
 	Satpos->SatPos[2] = ResP(2, 0); Satpos->SatVel[2] = ResV(2, 0);
 }
 /***************
-利用观测数据里面给出的质量标准先初步判断周跳：
-FormLocktime:前历元下单个卫星跟踪时长
-LatObs:后历元下单个卫星观测数据
+Using the quality criteria given in the observation data, the cycle slip is preliminarily judged:
+FormLocktime: the tracking time of a single satellite in the previous epoch
+LatObs: the observation data of a single satellite in the post-epoch
 ****************/
 void DTCycleSlipIni(SATOBSDATA* LatObs)
 {
@@ -260,15 +259,15 @@ void DTCycleSlipIni(SATOBSDATA* LatObs)
 	memcpy(FormLocktime, LatObs->FormLocktime, 2 * sizeof(double));
 	for (int i = 0; i < 2; i++)
 	{
-		if (LatObs->fFlag[i] == 0) continue;/*只有fFlag为1时才能继续执行下去*/
-		/*先针对locktime*/
+		if (LatObs->fFlag[i] == 0) continue;/*Only when fFlag is 1 can it be executed*/
+		/*for locktime*/
 		if (LatObs->locktime[i] < 6) {
 			LatObs->fFlag[i] = -1;
 			continue;
 		};
 		double dt = LatObs->locktime[i] - FormLocktime[i];
 		if (dt < 0) LatObs->fFlag[i] = -1;
-		/*再看Parity,判断半周情况*/
+		/*for Parity,half of circle*/
 		if (LatObs->Parity[i] == 0)
 		{
 			LatObs->fFlag[i] = -1;

@@ -1,3 +1,5 @@
+#ifndef PARAM_H
+#define PARAM_H
 #define MAXCHANNUM 97 /*本来是最大96个，我们舍弃索引为0的元素，故设为97个，第一个不用*/
 #define MAXGPSPRN 33/*第一个不用*/
 #define MAXBDSPRN 65/*第一个不同*/
@@ -49,3 +51,4 @@
 
 #define U1(p) (*((unsigned char *)(p)))
 #define I1(p) (*((char *)(p)))
+#endif

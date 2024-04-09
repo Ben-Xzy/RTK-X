@@ -52,7 +52,7 @@ void OutPutResult(EPOCHOBSDATA* EachObs, POSRES Res, ofstream& outfile, int flag
 		outfile << endl;
 		cout << Res.PDOP << "   " << Res.SigmaPos << "   " << Res.SigmaVel << endl;
 	}
-	else { cout << "Ö¸Áî´íÎó" << endl; }
+	else { cout << "instructions error!" << endl; }
 }
 void OutputRTK(GPSTIME T,DDCEPOCHOBS D,ofstream& outfile,string s)
 {
@@ -76,11 +76,12 @@ void OutputRTK(GPSTIME T,DDCEPOCHOBS D,ofstream& outfile,string s)
 		 outfile << endl;
 	 }
 	 string ss[2] = { "G","C" };
+	 cout << " ref Sat PRN: ";
 	 for (int i = 0; i < 2; i++)
 	 {
 		 if (D.RefPrn[i] != -1)
 		 {
-			 cout << " ²Î¿¼ÎÀÐÇ: " <<ss[i]<< D.RefPrn[i];
+			 cout  <<ss[i]<< D.RefPrn[i] << " ";
 		 }
 	 }
 	 cout << endl;

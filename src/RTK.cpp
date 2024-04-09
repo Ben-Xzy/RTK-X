@@ -5,10 +5,10 @@
 
 using namespace std;
 /************
-Á÷¶¯Õ¾»ùÕ¾Ê±¼äÍ¬²½º¯Êý:
-1´ú±íÍ¬²½³É¹¦£»
-0´ú±íÍ¬²½Ê§°Ü,¼´»ùÕ¾¹Û²âÊý¾ÝÊ±¼äÔÚÁ÷¶¯Õ¾Ö®ºó£»
--1´ú±íÎÄ¼þ¶ÁÈ¡½áÊø£»
+Rover base station time synchronization function:
+1 represents the success of synchronization;
+0 indicates synchronization failure, that is, the time of the base station observation data is after the rover;
+-1 represents the end of the file read;
 ***************/
 int RtkObsSyn(FILE* fb, FILE* fr,RTKDATA *rawdata,POSRES *BasPos,POSRES *RovPos)
 {
@@ -21,22 +21,22 @@ int RtkObsSyn(FILE* fb, FILE* fr,RTKDATA *rawdata,POSRES *BasPos,POSRES *RovPos)
 	bool fileFlag = false;
 	while (!feof(fr))
 	{
-		/*ÏÈ¶ÁÁ÷¶¯Õ¾Êý¾Ý*/
-		RLen = fread(Rbuff + Rd, 1, MAXRawLen - Rd, fr);/*len·µ»ØµÄÊÇ¶ÁÈ¡¸öÊý*/
+		/*Read the rover data first*/
+		RLen = fread(Rbuff + Rd, 1, MAXRawLen - Rd, fr);
 		if (RLen < MAXRawLen - Rd)
 		{
 			fileFlag = true;
-		}/*¶Áµ½ÁË½áÎ²*/
-		Rd = Rd + RLen;//¶ÁÁËÎÄ¼þºó×Ö½Ú³¤¶È»Ö¸´MaxRawLen
+		}
+		Rd = Rd + RLen;
 		int RangeFlag = DecodeNovOem7Dat(Rbuff, Rd, &rawdata->RovEpk, rawdata->GpsEph, rawdata->BdsEph, RovPos);
-		if (RangeFlag == 1) break;/*¶Áµ½ÁË¹Û²âÊý¾Ý*/
+		if (RangeFlag == 1) break;/*Get Obs data*/
 		if (fileFlag)
 		{
-			cout << "ÎÄ¼þ¶ÁÈ¡½áÊø" << endl;
-			return -1;/*¶Áµ½ÁË½áÎ²*/
+			cout << "end of file" << endl;
+			return -1;
 		}
 	}
-	/*ÏÈÑéÖ¤±¾´Î¸üÐÂÁ÷¶¯Õ¾Êý¾ÝºóµÄdtÊÇ·ñÐ¡ÓÚãÐÖµ*/
+	/*First, verify whether the DT after the rover data is less than the threshold*/
 	if (fabs(rawdata->RovEpk.Time.SecOfWeek - rawdata->BasEpk.Time.SecOfWeek) < CFGINFO.RtkSynFileThre)
 	{
 		return 1;
@@ -45,23 +45,23 @@ int RtkObsSyn(FILE* fb, FILE* fr,RTKDATA *rawdata,POSRES *BasPos,POSRES *RovPos)
 	{
 		return 0;
 	}
-	/*½âÂë»ùÕ¾Êý¾Ý²¢×öÊý¾Ý¶ÔÆë£¬½á¹û·ÖÈýÖÖÇé¿ö*/
+	/*Decode the base station data and do data alignment, and the results are divided into three situations*/
 	while (1)
 	{
 		while (!feof(fb))
 		{
-			BLen = fread(Bbuff + Bd, 1, MAXRawLen - Bd, fb);/*len·µ»ØµÄÊÇ¶ÁÈ¡¸öÊý*/
+			BLen = fread(Bbuff + Bd, 1, MAXRawLen - Bd, fb);
 			if (BLen < MAXRawLen - Bd)
 			{
 				fileFlag = true;
 			}
 			Bd = BLen + Bd;
-			int RangeFlag = DecodeNovOem7Dat(Bbuff, Bd, &rawdata->BasEpk, rawdata->GpsEph, rawdata->BdsEph, BasPos);//1´ú±íÓÐÐÇÀúÓÐ¹Û²âÊý¾Ý£¬¿ÉÒÔ½âËã£¬-1´ú±íÊý¾Ý½Ø¶Ï£¬¼ÌÐø¶ÁÈ¡Êý¾ÝÒÔ±ã½âËã
-			if (RangeFlag == 1) { break; }/*¶Áµ½ÁË¹Û²âÊý¾Ý*/
+			int RangeFlag = DecodeNovOem7Dat(Bbuff, Bd, &rawdata->BasEpk, rawdata->GpsEph, rawdata->BdsEph, BasPos);//1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¹Û²ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½Ô½ï¿½ï¿½ã£¬-1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý½Ø¶Ï£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ï¿½
+			if (RangeFlag == 1) { break; }
 			if (fileFlag)
 			{
-				cout << "ÎÄ¼þ¶ÁÈ¡½áÊø" << endl;
-				return -1;/*¶Áµ½ÁË½áÎ²*/
+				cout << "end of file" << endl;
+				return -1;
 			}
 		}
 
@@ -71,7 +71,7 @@ int RtkObsSyn(FILE* fb, FILE* fr,RTKDATA *rawdata,POSRES *BasPos,POSRES *RovPos)
 		}
 		if (rawdata->RovEpk.Time.SecOfWeek - rawdata->BasEpk.Time.SecOfWeek < 0)
 		{
-			return 0;
+			return 0;/*Rover data precedes base station data*/
 		}
 	}
 }
@@ -89,7 +89,6 @@ int RtkObsSyn(SOCKET& bIp, SOCKET& rIp, RTKDATA* rawdata, POSRES* BasPos, POSRES
 	while (1)
 	{
 		//Sleep(980);
-		/*ÏÈ¶ÁÁ÷¶¯Õ¾Êý¾Ý*/
 		if ((RLen = recv(rIp, (char*)Rtemp, MAXRawLen, 0)) > 0)
 		{
 			memcpy(Rbuff + Rd, Rtemp, RLen);
@@ -100,27 +99,25 @@ int RtkObsSyn(SOCKET& bIp, SOCKET& rIp, RTKDATA* rawdata, POSRES* BasPos, POSRES
 			{
 				cout << "Get RovObs" << endl;
 				break;
-			}/*¶Áµ½ÁË¹Û²âÊý¾Ý*/
+			}
 		}
-		else { cout << "Î´½ÓÊÜµ½Á÷¶¯Õ¾Êý¾Ý" << endl; return -1; }
+		else { cout << "socket Get no RovObs!" << endl; return -1; }
 
 	}
-	/*ÏÈÑéÖ¤±¾´Î¸üÐÂÁ÷¶¯Õ¾Êý¾ÝºóµÄdtÊÇ·ñÐ¡ÓÚãÐÖµ*/
 	if (fabs(rawdata->RovEpk.Time.SecOfWeek - rawdata->BasEpk.Time.SecOfWeek) < CFGINFO.RtkSynSktThre)
 	{
 		return 1;
 	}
-	if (rawdata->RovEpk.Time.SecOfWeek - rawdata->BasEpk.Time.SecOfWeek < 0)/*Á÷¶¯Õ¾Êý¾ÝÔÚ»ùÕ¾Êý¾ÝÖ®Ç°*/
+	if (rawdata->RovEpk.Time.SecOfWeek - rawdata->BasEpk.Time.SecOfWeek < 0)
 	{
 		return 0;
 	}
-	/*½âÂë»ùÕ¾Êý¾Ý²¢×öÊý¾Ý¶ÔÆë£¬½á¹û·ÖÈýÖÖÇé¿ö*/
 	while (1)
 	{
 		while (1)
 		{
 			//Sleep(980);
-			/*ÏÈ¶ÁÁ÷¶¯Õ¾Êý¾Ý*/
+
 			if ((BLen = recv(bIp, (char*)Btemp, MAXRawLen, 0)) > 0)
 			{
 				memcpy(Bbuff + Bd, Btemp, BLen);
@@ -131,9 +128,9 @@ int RtkObsSyn(SOCKET& bIp, SOCKET& rIp, RTKDATA* rawdata, POSRES* BasPos, POSRES
 				{
 					cout << "Get BasObs" << endl;
 					break;
-				}/*¶Áµ½ÁË¹Û²âÊý¾Ý*/
+				}
 			}
-			else { cout << "Î´½ÓÊÜµ½Á÷¶¯Õ¾Êý¾Ý" << endl; return -1; }
+			else { cout << "socket Get no BasObs!" << endl; return -1; }
 		}
 
 		if (fabs(rawdata->RovEpk.Time.SecOfWeek - rawdata->BasEpk.Time.SecOfWeek) < CFGINFO.RtkSynSktThre)
@@ -147,11 +144,11 @@ int RtkObsSyn(SOCKET& bIp, SOCKET& rIp, RTKDATA* rawdata, POSRES* BasPos, POSRES
 	}
 }
 /****************
-¼ÆËãµ¥²îº¯Êý:
-1¡¢ÊäÈëÊý¾Ý:»ùÕ¾Êý¾Ý£¬Á÷¶¯Õ¾Êý¾Ý£¬»ùÕ¾½á¹ûÊý¾Ý£¬Á÷¶¯Õ¾½á¹ûÊý¾Ý£¬µ¥²îÊý¾Ý
-2¡¢×¢ÒâRTKDATAÖÐobsµÄfFlag´ú±íÒ»¸öÎÀÐÇÒ»¸öÆµÂÊµÄ×´¿ö£¨-1ÓÐÖÜÌø£¬0ÎÞÊý¾Ý£¬1ÎÞÖÜÌø£©
-				sdobsµÄfFlag´ú±íµ¥²îÊý¾ÝµÄÆµÂÊÓÐÐ§ÐÔ£¨-1ÓÐÖÜÌø£¬0ÎÞÊý¾Ý£¬1ÎÞÖÜÌø£©
-±¾º¯ÊýÖ»ÅÐ¶ÏÊý¾ÝÊÇ·ñÊÇË«Æµ²¢½øÐÐµ¥²î£¬ÖÜÌøÐÅÏ¢ÔÚCalSinDifCySlipº¯Êý¼ÆËã
+To calculate the single-difference function:
+1. Input data: base station data, rover data, base station result data, rover result data, single difference data
+2. Note that the fFlag of obs in RTKDATA represents a satellite with a frequency (-1 has a cycle, 0 has no data, and 1 has no cycle).
+				The fFlag of sdobs represents the frequency validity of single-difference data (-1 with cycle slip, 0 with no data, 1 without cycle slip)
+This function only determines whether the data is dual-frequency and performs a single difference, and the cycle hop information is calculated in the CalSinDifCySlip function
 ***************/
 void CalStaSinDif(EPOCHOBSDATA* BasEpk,EPOCHOBSDATA *RovEpk,POSRES *BasPos,POSRES *RovPos,SDEPOCHOBS *SdObs)
 {
@@ -161,12 +158,12 @@ void CalStaSinDif(EPOCHOBSDATA* BasEpk,EPOCHOBSDATA *RovEpk,POSRES *BasPos,POSRE
 	GNSSSys Sys;
 	double dP[2], dL[2];
 	double DN[2];
-	AmbigInitial(BasEpk, BasPos);/*»ùÕ¾Ä£ºý¶È³õÊ¼»¯*/
-	AmbigInitial(RovEpk, RovPos);/*Á÷¶¯Õ¾Ä£ºý¶È³õÊ¼»¯*/
-	/*Õû¸öÑ­»·µÄÁ÷³Ì¾ùÒÔ»ùÕ¾µÄ´ÎÐòÎªÖ÷*/
+	AmbigInitial(BasEpk, BasPos);
+	AmbigInitial(RovEpk, RovPos);
+	/*The flow of the whole cycle is dominated by the sequence of base stations*/
 	for (int i = 0; i < MAXCHANNUM; i++)
 	{
-		if(BasEpk->Satobs[i].Valid) /*ÅÐ¶Ï»ùÕ¾¹Û²âÊý¾ÝÊÇ·ñÓÐÐ§*/
+		if(BasEpk->Satobs[i].Valid) 
 		{
 			Prn = BasEpk->Satobs[i].Prn;
 			Sys= BasEpk->Satobs[i].System;
@@ -181,12 +178,12 @@ void CalStaSinDif(EPOCHOBSDATA* BasEpk,EPOCHOBSDATA *RovEpk,POSRES *BasPos,POSRE
 			continue;
 		}
 		SdObs->SdSatObs[i].nBas = i;
-		/*Ñ°ÕÒÁ÷¶¯Õ¾ÖÐ¶ÔÓ¦µÄÓÐÐ§PRNºÅ*/
+		/*Find the corresponding valid PRN number in the rover*/
 		for (int j = 0; j < MAXCHANNUM; j++)
 		{
-			/*¼ì²éPRNºÍÏµÍ³ÄÜ·ñ¶ÔÓ¦ÉÏ*/
+			/*Check whether the PRN and the system are compatible*/
 			bool flag = (Prn == RovEpk->Satobs[j].Prn && Sys == RovEpk->Satobs[j].System) ? true : false;
-			if (RovEpk->Satobs[j].Valid && flag)/*ÅÐ¶ÏÁ÷¶¯Õ¾ÓÐÐ§ÇÒÍ¨¹ý¶ÔÆë*/
+			if (RovEpk->Satobs[j].Valid && flag)/*Judge that the rover is valid and aligned*/
 			{
 				SdObs->SdSatObs[i].nRov = j;
 				SdObs->SatNum++;
@@ -198,7 +195,7 @@ void CalStaSinDif(EPOCHOBSDATA* BasEpk,EPOCHOBSDATA *RovEpk,POSRES *BasPos,POSRE
 				}
 				DN[0] = RovPos->AmbiL1[Prn] - BasPos->AmbiL1[Prn];
 				DN[1] = RovPos->AmbiL2[Prn] - BasPos->AmbiL2[Prn];
-				/*½øÐÐµ¥²î´¦Àí*/
+				/*Perform single-difference processing*/
 				for (int m = 0; m < 2; m++)
 				{
 					dP[m] = RovEpk->Satobs[j].P[m] - BasEpk->Satobs[i].P[m];
@@ -206,7 +203,7 @@ void CalStaSinDif(EPOCHOBSDATA* BasEpk,EPOCHOBSDATA *RovEpk,POSRES *BasPos,POSRE
 					dL[m] = RovEpk->Satobs[j].L[m] - BasEpk->Satobs[i].L[m];
 
 					
-				/*ÅÐ¶ÏÊÇµ¥Æµ»¹ÊÇË«Æµ*/
+				/*Determine whether it is single or dual frequency*/
 					if (RovEpk->Satobs[j].fFlag[m]==0 || BasEpk->Satobs[i].fFlag[m]==0)
 					{
 						SdObs->SdSatObs[i].P[m] = 0.0;
@@ -221,15 +218,15 @@ void CalStaSinDif(EPOCHOBSDATA* BasEpk,EPOCHOBSDATA *RovEpk,POSRES *BasPos,POSRE
 						SdObs->SdSatObs[i].fFlag[m] = 1;
 					}
 				}
-				Prn=0; /*½«Prn»Ö¸´Ä¬ÈÏÖµ*/
+				Prn=0; /*Restore the Prn to its default value*/
 			}
 			else { continue; }
 		}
 	}
 }
 /***********************
-ÀûÓÃµ¥²îÊý¾Ý½øÒ»²½ÖÜÌø¼ì²â£º
-²ÉÓÃturboEdit·½·¨½øÐÐÖÜÌø¼ìÑé
+Further cycle slip detection with single difference data:
+The turboEdit method was used to perform the cycle slip test
 *************************/
 void DTSinDifCySlip(EPOCHOBSDATA* BasEpk, EPOCHOBSDATA* RovEpk, SDEPOCHOBS* SdObs)
 {
@@ -240,7 +237,7 @@ void DTSinDifCySlip(EPOCHOBSDATA* BasEpk, EPOCHOBSDATA* RovEpk, SDEPOCHOBS* SdOb
 	MWGF Com_Cur[MAXCHANNUM];
 	for (int i = 0; i < MAXCHANNUM; i++)
 	{
-		/*ÏÈ¸ù¾Ý·Ç²î¹Û²âÖµÅÐ¶ÏÊÇ·ñÓÐÖÜÌø*/
+		/*First, determine whether there is a weekly slip based on the non-difference observations*/
 		BasInd = SdObs->SdSatObs[i].nBas;
 		RovInd = SdObs->SdSatObs[i].nRov;
 		for (int m = 0; m < 2; m++)
@@ -253,7 +250,7 @@ void DTSinDifCySlip(EPOCHOBSDATA* BasEpk, EPOCHOBSDATA* RovEpk, SDEPOCHOBS* SdOb
 		Com_Cur[i].Prn = SdObs->SdSatObs[i].Prn;
 		Com_Cur[i].Sys = SdObs->SdSatObs[i].System;
 		Com_Cur[i].n = 1;
-		/*½øÐÐµ¥²î¹Û²âÖµµÄMWGF×éºÏ£¬ÅÐ¶ÏÊÇ·ñÓÐÖÜÌø*/
+		/*The MWGF combination of single difference observations is performed to determine whether there is a weekly slip*/
 		CalMWGFPIF<MWGF, SDSATOBS>(Com_Cur[i], SdObs->SdSatObs[i]);
 		FindFlag = false;
 		for ( j = 0; j < MAXCHANNUM; j++)
@@ -268,57 +265,52 @@ void DTSinDifCySlip(EPOCHOBSDATA* BasEpk, EPOCHOBSDATA* RovEpk, SDEPOCHOBS* SdOb
 		if (FindFlag)
 		{
 			dGF = Com_Cur[i].GF - SdObs->SdCObs[j].GF;
-			dMW = Com_Cur[i].MW - SdObs->SdCObs[j].MW;/*ÏÈ¼ÆËã²îÖµdMWÔÙ¼ÆËãMWµÄµ±Ç°ÀúÔªÆ½»¬Öµ²¢´¢´æ*/
+			dMW = Com_Cur[i].MW - SdObs->SdCObs[j].MW;
 			if (fabs(dGF) < 5e-2 && fabs(dMW) < 3)
 			{
-				//Obs->SatPvT[i].Valid = true;
 				SdObs->SdSatObs[i].fFlag[0] = SdObs->SdSatObs[i].fFlag[1] = 1;
 				SdObs->SdCObs[i].Prn = SdObs->SdCObs[j].Prn;
 				SdObs->SdCObs[i].Sys = SdObs->SdCObs[j].Sys;
 				SdObs->SdCObs[i].MW = (SdObs->SdCObs[j].n * SdObs->SdCObs[j].MW + Com_Cur[i].MW) / (SdObs->SdCObs[j].n + 1);
 				SdObs->SdCObs[i].n = SdObs->SdCObs[j].n + 1;
-				SdObs->SdCObs[i].PIF = Com_Cur[i].PIF;//ÎªÁËÓëobsµÄPRNË³Ðò¶ÔÆë£¬ÕâÀï°´ÕÕobsµÄË³ÐòÅÅÁÐ
+				SdObs->SdCObs[i].PIF = Com_Cur[i].PIF;
 			}
-			else/*¼´´ËÊ±·¢ÉúÁËÖÜÌø£¬MW×éºÏÖµÓ¦¸Ã¿ªÊ¼ÐÂµÄÆ½»¬*/
+			else/*At this point, a weekly slip has occurred, and the combined MW value should start a new smoothing*/
 			{
-				//Obs->SatPvT[i].Valid = true;
 				SdObs->SdSatObs[i].fFlag[0] = SdObs->SdSatObs[i].fFlag[1] = -1;
 				SdObs->SdCObs[i].Prn = Com_Cur[i].Prn;
 				SdObs->SdCObs[i].Sys = Com_Cur[i].Sys;
 				SdObs->SdCObs[i].MW = Com_Cur[i].MW;
 				SdObs->SdCObs[i].n = 1;
-				SdObs->SdCObs[i].PIF = Com_Cur[i].PIF;  //PIFÓëÖÜÌøÊÇ·ñ·¢ÉúÎÞ¹Ø
+				SdObs->SdCObs[i].PIF = Com_Cur[i].PIF;  //PIF has nothing to do with whether a cycle slip occurs or not
 			}
 			if (i != j)
 			{
-				memset(SdObs->SdCObs+ j, 0, sizeof(MWGF));//ÔÚ´¦ÀíÍêµÚi¸öÐòÁÐµÄ¹Û²âÖµºó£¬½«Ô­µÚj¸öMWGF¸øÖØÖÃ
+				memset(SdObs->SdCObs+ j, 0, sizeof(MWGF));//After processing the observations of the ith sequence, the original j-th MWGF was reset
 			}
 		}
 		else                                                                                                                        
 		{
 			memcpy(SdObs->SdCObs + i, Com_Cur + i, sizeof(MWGF));
-			//Obs->SatPvT[i].Valid = true;
 			SdObs->SdCObs[i].n = 1;
 			SdObs->SdCObs[i].PIF = Com_Cur[i].PIF;
 		}
-		//memset(Obs->Satobs+i, 0, sizeof(SATOBSDATA));
-
 	}
 }
 /***************
- Ë«²îº¯Êý:
- ²ÎÊý£ºÁ÷¶¯Õ¾Êý¾Ý£¬µ¥²îÊý¾Ý£¬Ë«²îÊä³öÊý¾Ý
+ Double-difference function:
+ Parameters: rover data, single-difference data, double-difference output data
  ***************/
 void CalStaDouDif(EPOCHOBSDATA* RovEpk,SDEPOCHOBS* SdObs, DDCEPOCHOBS* DDObs)
 {
 	int RefInd=0;
 	int GPSnum=0, BDSnum = 0;
 	double ScoreMax[2] = { 0.0,0.0 };
-	int SatFlag = 0;/*ÅÐ¶Ï¸ÃÐÇÊÇGPS£¨0£©»¹ÊÇBDS£¨1£©*/
-	/*Ñ¡È¡²Î¿¼ÐÇ£¬´ÓÁ÷¶¯Õ¾Ñ¡È¡*/
+	int SatFlag = 0;/*GPS(0),BDS(1)*/
+	/*Select the reference star, selected from the rover*/
 	for (int i = 0; i < MAXCHANNUM; i++)
 	{
-		if (SdObs->SdSatObs[i].System == UNKS)/*Ö»´¦ÀíBDSºÍGPSÎÀÐÇÊý¾Ý*/
+		if (SdObs->SdSatObs[i].System == UNKS)/*Only BDS and GPS satellite data are processed*/
 		{
 			continue;
 		}
@@ -343,8 +335,8 @@ void CalStaDouDif(EPOCHOBSDATA* RovEpk,SDEPOCHOBS* SdObs, DDCEPOCHOBS* DDObs)
 		if (score > ScoreMax[SatFlag])
 		{
 			ScoreMax[SatFlag] = score;
-			DDObs->RefPrn[SatFlag] = SdObs->SdSatObs[i].Prn;/*BDSºÍGPS·Ö±ðÓÐÒ»¸ö²Î¿¼ÐÇ*/
-			DDObs->RefPos[SatFlag] = i;/*´ËÊ±µÄË÷Òý±ä³Éµ¥²îÊý×éÖÐµÄË÷Òý*/
+			DDObs->RefPrn[SatFlag] = SdObs->SdSatObs[i].Prn;/*BDS and GPS each have a reference star*/
+			DDObs->RefPos[SatFlag] = i;/*The index becomes an index in a single-difference array*/
 		}
 	}
 	DDObs->DDSatNum[0] = (GPSnum > 1)? GPSnum-1:0;
@@ -354,17 +346,17 @@ void CalStaDouDif(EPOCHOBSDATA* RovEpk,SDEPOCHOBS* SdObs, DDCEPOCHOBS* DDObs)
 	{
 		DDCOBS tempObs;
 		double tempDDN = 0.0;
-		if (SdObs->SdSatObs[i].System == UNKS)/*Ö»´¦ÀíBDSºÍGPSË«ÆµÊý¾Ý*/
+		if (SdObs->SdSatObs[i].System == UNKS)/*Only BDS and GPS dual-band data are processed*/
 		{
 			continue;
 		}
-		if (!RovEpk->SatPvT[SdObs->SdSatObs[i].nRov].Valid)/*ÕâÀïÒ²±ØÐë¿¼ÂÇ´ý²âÎÀÐÇÒªÓÐPVT,´Ë´¦ÓÃBasEpk->SatPvT[SdObs->SdSatObs[i].nBas*/
+		if (!RovEpk->SatPvT[SdObs->SdSatObs[i].nRov].Valid)/*Here it must also be considered that the satellite to be tested must have PVT, which is use BasEpk->SatPvT[SdObs->SdSatObs[i].nBas*/
 		{
 			continue;
 		}
 		SatFlag = (SdObs->SdSatObs[i].System == GPS) ? 0 : 1;
-		RefInd = DDObs->RefPos[SatFlag];/*½«refIndÖÃÎªÕæÕýµÄ²Î¿¼ÎÀÐÇË÷Òý*/
-		if(i== RefInd)/*ÈôÎÀÐÇÖØºÏÔòÌø¹ý*/
+		RefInd = DDObs->RefPos[SatFlag];/*Make refInd a true reference satellite index*/
+		if(i== RefInd)/*If the satellites coincide, skip it*/
 		{
 			continue;
 		}
@@ -385,11 +377,11 @@ bool RTKFixed(EPOCHOBSDATA* RovObs, EPOCHOBSDATA* BasObs, POSRES* RovPos, DDCEPO
 {
 	LSQ ls;
 	int IterNum = 0;
-	do/*×îÐ¡¶þ³Ëµü´ú*/
+	do/*Least-squares iteration*/
 	{
 		RtkAlignDataIni(&RAlign);
 		memset(&ls, 0, sizeof(LSQ));
-		for (int i = 0; i < DDObs->Sats; i++)/* ´ËÊ±RovSatDisµÄÎÀÐÇÅÅºÅÓëBasSatDisÒ»ÖÂ*/
+		for (int i = 0; i < DDObs->Sats; i++)/* At this time, the satellite number of RovSatDis is the same as that of BasSatDis*/
 		{
 			CalStaSatDis(RovPos->Pos, RovObs, &DDObs->DDValue[i], &RAlign);
 		}
@@ -407,21 +399,21 @@ bool RTKFixed(EPOCHOBSDATA* RovObs, EPOCHOBSDATA* BasObs, POSRES* RovPos, DDCEPO
 		IterNum++;
 		if (IterNum > 10)
 		{
-			cout << "×îÐ¡¶þ³ËÎ´ÊÕÁ²" << endl;
+			cout << "Fixed RTK LSQ are not converging" << endl;
 			return false;
 		}
 	} while (fabs(ls.x(0, 0) + ls.x(1, 0) + ls.x(2, 0)) > 1e-6);
-
+	return true;
 
 }
 /*********************
-Ïà¶Ô¶¨Î»×îÐ¡¶þ³Ëº¯Êý:
-ÊäÈë£ºÁ÷¶¯Õ¾¹Û²âÊý¾Ý£¬»ùÕ¾¹Û²âÊý¾Ý£¬Á÷¶¯Õ¾Î»ÖÃ£¬»ùÕ¾Î»ÖÃ£¬
-Ë«²îÊý¾Ý£¬µ¥²îÊý¾Ý
+Relative Positioning Least Squares Function:
+Input: Rover Observation Data, Base Station Observation Data, Rover Location, Base Station Location,
+Double-difference data, single-difference data
 ********************/
 bool RTK(EPOCHOBSDATA *RovObs,EPOCHOBSDATA *BasObs, POSRES* RovPos, POSRES* BasPos,DDCEPOCHOBS *DDObs)
 {
-	/*Á÷¶¯Õ¾ºÍ»ùÕ¾Î»ÖÃ³õÖµ¾ÍÊÇº¯ÊýÈë¿ÚµÄÁ½¸öÎ»ÖÃ²ÎÊý*/
+	/*The initial values of the rover and base station are the two positional parameters of the function entrance*/
 	double DDNSet[2 * MAXCHANNUM];
 	double* Qnn=new double[4 * DDObs->Sats * DDObs->Sats];
 	memset(Qnn, 0, 4* DDObs->Sats * DDObs->Sats * sizeof(double));
@@ -430,18 +422,18 @@ bool RTK(EPOCHOBSDATA *RovObs,EPOCHOBSDATA *BasObs, POSRES* RovPos, POSRES* BasP
 	LSQ ls;
 	int IterNum = 0;
 	RecordPrn(DDObs, DDObs->FormPrn, DDObs->FormSys);
-	/*»ùÕ¾µ½´ý²âÐÇ¼¸ºÎ¾àÀë*/
-	for (int i = 0; i < DDObs->Sats; i++)/*¼ÆËãµÃµ½µÄÎÀÐÇÅÅÐòºÍ*/
+	/*The geometric distance from the base station to the star to be measured*/
+	for (int i = 0; i < DDObs->Sats; i++)/*The calculated satellite sorts and sums*/
 	{
 		CalStaSatDis(BasPos->RealPos, BasObs, &DDObs->DDValue[i], &BasSatData);	
 	}
 	CalRefDis(BasPos->RealPos, BasObs, DDObs->RefPrn, &BasSatData);
 
-	do/*×îÐ¡¶þ³Ëµü´ú*/
+	do/*Least-squares iteration*/
 	{
 		RtkAlignDataIni(&RovSatData);
 		memset(&ls, 0, sizeof(LSQ));
-		for (int i = 0; i < DDObs->Sats; i++)/* ´ËÊ±RovSatDisµÄÎÀÐÇÅÅºÅÓëBasSatDisÒ»ÖÂ*/
+		for (int i = 0; i < DDObs->Sats; i++)/*At this time, the satellite number of RovSatDis is the same as that of BasSatDis*/
 		{
 			CalStaSatDis(RovPos->Pos, RovObs, &DDObs->DDValue[i], &RovSatData);
 		}
@@ -459,16 +451,13 @@ bool RTK(EPOCHOBSDATA *RovObs,EPOCHOBSDATA *BasObs, POSRES* RovPos, POSRES* BasP
 		for (int m = 0; m < DDObs->DDValue.size(); m++)
 		{
 			cout.precision(5);
-			//cout << DDObs->DDValue[m].ddN[0] << endl;
-			//cout << DDObs->DDValue[m].ddN[1] << endl;
-
 			DDObs->DDValue[m].ddN[0] = DDObs->DDValue[m].ddN[0] + ls.x(3 + m * 2 + 0, 0);
 			DDObs->DDValue[m].ddN[1] = DDObs->DDValue[m].ddN[1] + ls.x(3 + m * 2 + 1, 0);
 		}
 		IterNum++;
 		if (IterNum > 10)
 		{
-			cout << "×îÐ¡¶þ³ËÎ´ÊÕÁ²" << endl;
+			cout << "RTK LSQ are not converging" << endl;
 			return false;
 		}
 	}while (fabs(ls.x(0, 0) + ls.x(1, 0) + ls.x(2, 0)) > 1e-6);
@@ -481,7 +470,7 @@ bool RTK(EPOCHOBSDATA *RovObs,EPOCHOBSDATA *BasObs, POSRES* RovPos, POSRES* BasP
 	CalZeroLine(BasPos->RealPos, RovPos->Pos, DDObs->dPos,DDObs->denu);
 	CalRatio(DDObs->FixRMS, DDObs->Ratio);
 	//ls.Q.MatrixDis();
-	//cout << "µü´ú´ÎÊý£º" << IterNum << endl;
+	//cout << "num of iterï¿½ï¿½" << IterNum << endl;
 	cout.flags(ios::fixed);
 	cout.precision(8);
 	//cout <<"X:  "<< DDObs->dPos[0]<<" Y:  " << DDObs->dPos[1] << " Z:  "<<DDObs->dPos[2] << endl;
@@ -520,11 +509,11 @@ void EKFinitial(RTKEKF *e, DDCEPOCHOBS* DDObs, POSRES *Sppr,XMatrix &ekfP)
 	memcpy(e->X, e->X0, 197 * sizeof(double));
 }
 /************
-ÀÎ¼Ç½øÐÐÒ»´ÎEKFºóÒª¸üÐÂe
+Remember to update e after doing EKF once
 *************/
 void EKF(RTKEKF *e,DDCEPOCHOBS *d,POSRES *r,POSRES *b,XMatrix &P, EPOCHOBSDATA* RovObs, EPOCHOBSDATA* BasObs)
 {
-	/*ÏÈ¹¹½¨×´Ì¬×ªÒÆ¾ØÕóPhi*/
+	/*First, construct the state transition matrix Phi*/
 	XMatrix Phi(3 + 2 * d->Sats, 3 + 2 * e->nSats);
 	XMatrix Q(3 + 2 * d->Sats, 3 + 2 * d->Sats);
 	double* Qnn = new double[2 * d->Sats * 2 * d->Sats];
@@ -533,17 +522,15 @@ void EKF(RTKEKF *e,DDCEPOCHOBS *d,POSRES *r,POSRES *b,XMatrix &P, EPOCHOBSDATA* 
 	XMatrix x_1;
 	consEKFPhi(e, d, Phi);
 	//Phi.MatrixDis();
-	/*¹¹½¨Q¾ØÕó*/
 	consEKFQ(d, Q);
-	/*¹¹½¨P¾ØÕó*/
 	consEKFP(e, d, P, Q, Phi);  
-	UpdateX(x, x_1, Phi, d);					//×´Ì¬·½³Ì²¿·Ö¹¹½¨½áÊø
-	/*¹¹½¨¹Û²â·½³Ì*/
+	UpdateX(x, x_1, Phi, d);					//The equation of state section is constructed
+	/*Construct observational equations*/
 	RtkAlignData BasSatData;
 	RtkAlignData RovSatData;
 	XMatrix H,L,R,K,v,E,t;
 	RtkAlignDataIni(&RovSatData);
-	for (int i = 0; i < d->Sats; i++)/*¼ÆËãµÃµ½µÄÎÀÐÇÅÅÐòºÍ*/
+	for (int i = 0; i < d->Sats; i++)/*The calculated satellite sorts and sums*/
 	{
 		CalStaSatDis(b->RealPos, BasObs, &d->DDValue[i], &BasSatData);
 		CalStaSatDis(r->Pos, RovObs, &d->DDValue[i], &RovSatData);
@@ -557,7 +544,7 @@ void EKF(RTKEKF *e,DDCEPOCHOBS *d,POSRES *r,POSRES *b,XMatrix &P, EPOCHOBSDATA* 
 	v= H * x_1;
 	v = L - v;
 	v = K * v;
-	x_1 = x_1 + v;/*×îºó¸üÐÂÍê³É*/
+	x_1 = x_1 + v;/*end of update*/
 	EyeMat(K.row, E);
 	t = K * H;
 	t = E - t;
@@ -566,7 +553,7 @@ void EKF(RTKEKF *e,DDCEPOCHOBS *d,POSRES *r,POSRES *b,XMatrix &P, EPOCHOBSDATA* 
 	EkfPGetQnn(P, Qnn);
 	EkfXGetfN(x_1, ddNSet);
 	lambda(2 * d->Sats, 2, ddNSet, Qnn, d->FixedAmb, d->FixRMS);
-	/*µÚ¶þ´Î¹Û²âÖµ¸üÐÂ£¬ÓÃ¹Ì¶¨µÄÄ£ºý¶È½øÐÐ¸üÐÂ*/
+	/*The second observation is updated, with a fixed ambiguity*/
 	TwiceUpdate(x_1, P, d->FixedAmb);
 	Matrix2Array(x_1, e->X);
 	memcpy(r->Pos, e->X, 3 * sizeof(double));

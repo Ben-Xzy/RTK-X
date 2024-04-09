@@ -1,4 +1,5 @@
-#pragma once
+#ifndef DATACLASSSET_H
+#define DATACLASSSET_H
 #include <iostream>
 #include <cmath>
 #include <string>
@@ -38,7 +39,7 @@ struct SATOBSDATA
 		for (int i = 0; i < 2; i++)
 			P[i] = L[i] = D[i] = 0.0;
 		Valid = false;
-		fFlag[0]=fFlag[1] = 0.0;
+		fFlag[0]=fFlag[1] = 0;
 
 	}
 };
@@ -340,3 +341,4 @@ public:
 		PDOP = 0.0;
 	}
 };
+#endif

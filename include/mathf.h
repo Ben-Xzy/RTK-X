@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MATHF_H
+#define MATHF_H
 #include<iostream>
 #include"DataClassSet.h"
 #include"Matrix.h"
@@ -45,3 +46,4 @@ void CalMWGFPIF(T& res, T2& value)
 	}
 	res.GF = value.L[0] - value.L[1];
 }
+#endif

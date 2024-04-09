@@ -1,3 +1,5 @@
+#ifndef SOCKET_H
+#define SOCKET_H
 #include<stdio.h>
 #include<windows.h>
 #pragma comment(lib,"WS2_32.lib")
@@ -6,5 +8,6 @@
 bool OpenSocket(SOCKET& sock, const char IP[], const unsigned short Port);
 
 void CloseSocket(SOCKET& sock);
+#endif
 
 

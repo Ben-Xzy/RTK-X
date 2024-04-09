@@ -1,4 +1,3 @@
-#pragma once
 #ifndef RR_CONFIG_H_
 #define RR_CONFIG_H_
 #include <string>

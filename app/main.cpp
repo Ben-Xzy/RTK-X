@@ -9,8 +9,7 @@
 #include<ostream>
 #include"RTK.h"
 #include"ReConfig.h"
-//#include <filesystem>
-//namespace fs = std::filesystem;
+
 ROVERCFGINFO CFGINFO;
 using namespace std;
 int main()
@@ -111,9 +110,6 @@ int main()
 	FILE* fr=NULL;
 	SOCKET NetGpsBas, NetGpsRov;
 	ofstream outfile;
-	//fs::path p = fs::current_path();
-	//p=p.parent_path();
-	//string p_str{p.u8string()};
 	string ConfigFile = "../../config/config.ini";
 	if (!rr::GetCfgInfo(CFGINFO, ConfigFile))
 	{
@@ -195,7 +191,7 @@ int main()
 		SPP(&rawdata.BasEpk, rawdata.GpsEph, rawdata.BdsEph, &BasSppRes);
 		if (BasSppRes.RealPos[0] == 0.0)
 		{
-			//cout << "����ֵ���꣨bestPos)����Bas��SPP�����Ϊ��ֵ����" << endl;
+			cout << "No bestPos��use Bas result of SPP" << endl;
 			memcpy(BasSppRes.RealPos, BasSppRes.Pos, 3 * sizeof(double));
 		}
 		//SPV(&rawdata.BasEpk, &BasSppRes);

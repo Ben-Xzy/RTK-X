@@ -1,11 +1,11 @@
-#pragma once
+#ifndef TIMECORDINATION_H
+#define TIMECORDINATION_H
 #include"math.h"
 #include"string.h"
 #include<iostream>
 #include"Matrix.h"
 
-#ifndef TIMECORDINATION_H
-#define TIMECORDINATION_H
+
 #define PI 3.1415926535897932 
 #define eSquared  0.00669437999013 //第一偏心率平方 
 #define A1 6378137.0//半长轴

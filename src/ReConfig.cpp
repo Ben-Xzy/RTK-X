@@ -56,7 +56,7 @@ namespace rr
 		if (line.empty())
 			return false;
 		int start_pos = 0, end_pos = line.size() - 1, pos, s_startpos, s_endpos;
-		if ((pos = line.find("#")) != -1)/*说明不是注释*/
+		if ((pos = line.find("#")) != -1)/*this line is not notes*/
 		{
 			if (0 == pos)
 			{
@@ -79,7 +79,7 @@ namespace rr
 			return false;
 		}
 		Trim(value);
-		if ((pos = value.find("\r")) > 0)/*换行符*/
+		if ((pos = value.find("\r")) > 0)/*Line breaks*/
 		{
 			value.replace(pos, 1, "");
 		}
@@ -93,7 +93,7 @@ namespace rr
 	bool RrConfig::ReadConfig(const std::string& filename)
 	{
 		settings_.clear();
-		std::ifstream infile(filename.c_str());//构造默认调用open,所以可以不调用open
+		std::ifstream infile(filename.c_str());
 		//std::ifstream infile;
 		//infile.open(filename.c_str());
 		//bool ret = infile.is_open()
@@ -102,12 +102,12 @@ namespace rr
 		}
 		std::string line, key, value, section;
 		std::map<std::string, std::string> k_v;
-		std::map<std::string, std::map<std::string, std::string> >::iterator it;/*map的find返回的是迭代器*/
+		std::map<std::string, std::map<std::string, std::string> >::iterator it;/*The "find" of the map returns an iterator*/
 		while (getline(infile, line))
 		{
 			if (AnalyseLine(line, section, key, value))
 			{
-				it = settings_.find(section);/*C++中map未找到条目时返回末尾值*/
+				it = settings_.find(section);/*In C++, the end value is returned when no entry is found in the map*/
 				if (it != settings_.end())
 				{
 					k_v[key] = value;
@@ -168,7 +168,7 @@ namespace rr
 		{
 			return default_value;
 		}
-		return atoi(it_item->second.c_str());
+		return stoi(it_item->second.c_str());
 	}
 
 	float RrConfig::ReadFloat(const char* section, const char* item, const float& default_value)
@@ -189,7 +189,7 @@ namespace rr
 		{
 			return default_value;
 		}
-		return atof(it_item->second.c_str());
+		return stof(it_item->second.c_str());
 	}
 	double RrConfig::ReadDouble(const char* section, const char* item, const double& default_value)
 {

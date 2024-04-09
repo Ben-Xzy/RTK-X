@@ -1,5 +1,4 @@
 #include"Matrix.h"
-#include"float.h"
 using namespace std;
 bool XMatrix::MatrixPlus(XMatrix& newV, XMatrix& res)
 {
@@ -19,7 +18,7 @@ bool XMatrix::MatrixPlus(XMatrix& newV, XMatrix& res)
 		}
 	}
 	else {
-		cout << "ï¿½ï¿½ï¿½ï¿½Ó·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½" << endl;
+		cout << "The matrix addition operation is in the wrong format" << endl;
 	}
 	return true;
 }
@@ -41,7 +40,7 @@ XMatrix XMatrix::operator+(XMatrix &newV)
 		}
 	}
 	else {
-		cout << "ï¿½ï¿½ï¿½ï¿½Ó·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½" << endl;
+		cout << "The matrix addition operation is in the wrong format" << endl;
 	}
 
 	return res;
@@ -63,7 +62,7 @@ bool XMatrix::MatrixMius(XMatrix& newV, XMatrix& res)
 		}
 	}
 	else {
-		cout << "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½" << endl;
+		cout << "The matrix subtraction operation is formatted incorrectly" << endl;
 	}
 	return true;
 }
@@ -85,7 +84,7 @@ XMatrix XMatrix::operator-(XMatrix& newV)
 		}
 	}
 	else {
-		cout << "ï¿½ï¿½ï¿½ï¿½Ó·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½" << endl;
+		cout << "The matrix addition operation is in the wrong format" << endl;
 	}
 
 	return res;
@@ -112,7 +111,7 @@ bool XMatrix::MatrixMul(XMatrix& newV, XMatrix& res)
 		}
 	}
 	else {
-		cout << "ï¿½ï¿½ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½" << endl;
+		cout << "The matrix multiplication operation is formatted incorrectly" << endl;
 	}
 	return true;
 }
@@ -139,11 +138,11 @@ XMatrix XMatrix::operator*(XMatrix& newV)
 		}
 	}
 	else {
-		cout << "ï¿½ï¿½ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½" << endl;
+		cout << "The matrix multiplication operation is formatted incorrectly" << endl;
 	}
 	return res;
 }
-bool XMatrix::MatrixInv()//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+bool XMatrix::MatrixInv()//¾ØÕóÇóÄæ
 {
 	vector<double> a(this->matrix.size());
 	vector<double> b(a.size());
@@ -168,7 +167,7 @@ bool XMatrix::MatrixInv()//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			return 0;
 		}
 
-		/* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½bï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½bï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ£¬aï¿½ï¿½ï¿½ó²»±ï¿½ */
+		/* ½«ÊäÈë¾ØÕó¸³Öµ¸øÊä³ö¾ØÕób£¬ÏÂÃæ¶Ôb¾ØÕóÇóÄæ£¬a¾ØÕó²»±ä */
 		for (i = 0; i < n; i++)
 		{
 			for (j = 0; j < n; j++)
@@ -180,7 +179,7 @@ bool XMatrix::MatrixInv()//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		for (k = 0; k < n; k++)
 		{
 			d = 0.0;
-			for (i = k; i < n; i++)   /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôªï¿½Øµï¿½Î»ï¿½ï¿½ */
+			for (i = k; i < n; i++)   /* ²éÕÒÓÒÏÂ½Ç·½ÕóÖÐÖ÷ÔªËØµÄÎ»ÖÃ */
 			{
 				for (j = k; j < n; j++)
 				{
@@ -195,13 +194,13 @@ bool XMatrix::MatrixInv()//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				}
 			}
 
-			if (d < DBL_EPSILON)   /* ï¿½ï¿½Ôªï¿½Ø½Ó½ï¿½ï¿½ï¿½0ï¿½ï¿½ï¿½ï¿½ï¿½ó²»¿ï¿½ï¿½ï¿½ */
+			if (d < DBL_EPSILON)   /* Ö÷ÔªËØ½Ó½üÓÚ0£¬¾ØÕó²»¿ÉÄæ */
 			{
 				printf("Divided by 0 in MatrixInv!\n");
 				return 0;
 			}
 
-			if (is[k] != k)  /* ï¿½ï¿½ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ */
+			if (is[k] != k)  /* ¶ÔÖ÷ÔªËØËùÔÚµÄÐÐÓëÓÒÏÂ½Ç·½ÕóµÄÊ×ÐÐ½øÐÐµ÷»» */
 			{
 				for (j = 0; j < n; j++)
 				{
@@ -213,7 +212,7 @@ bool XMatrix::MatrixInv()//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				}
 			}
 
-			if (js[k] != k)  /* ï¿½ï¿½ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ */
+			if (js[k] != k)  /* ¶ÔÖ÷ÔªËØËùÔÚµÄÁÐÓëÓÒÏÂ½Ç·½ÕóµÄÊ×ÁÐ½øÐÐµ÷»» */
 			{
 				for (i = 0; i < n; i++)
 				{
@@ -226,7 +225,7 @@ bool XMatrix::MatrixInv()//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			}
 
 			l = k * n + k;
-			b[l] = 1.0 / b[l];  /* ï¿½ï¿½ï¿½ï¿½ï¿½Ð±ä»» */
+			b[l] = 1.0 / b[l];  /* ³õµÈÐÐ±ä»» */
 			for (j = 0; j < n; j++)
 			{
 				if (j != k)
@@ -259,7 +258,7 @@ bool XMatrix::MatrixInv()//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			}
 		}
 
-		for (k = n - 1; k >= 0; k--)  /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â»Ö¸ï¿½ */
+		for (k = n - 1; k >= 0; k--)  /* ½«ÉÏÃæµÄÐÐÁÐµ÷»»ÖØÐÂ»Ö¸´ */
 		{
 			if (js[k] != k)
 			{
@@ -288,7 +287,7 @@ bool XMatrix::MatrixInv()//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	}
 	else
 	{
-	cout << "ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" << endl;
+	cout << "The matrix format does not conform to the inversion rules" << endl;
 	}
 	return true;
 }
@@ -339,7 +338,7 @@ XMatrix::XMatrix()
 	this->col = 1;
 }
 double& XMatrix::operator()(int r, int c)
-{/*ï¿½ï¿½ï¿½ï¿½ï¿½Ç´ï¿½0ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¶ï¿½Ó¦ÖµÒª+1*/
+{/*ÓÉÓÚÊÇ´Ó0¿ªÊ¼Ë÷Òý£¬¹Ê¶ÔÓ¦ÖµÒª+1*/
 	int row1 = this->row;
 	int col1 = this->col;
 	this->matrix.resize(row1 * col1);
@@ -359,14 +358,14 @@ double& XMatrix::operator()(int r, int c)
 		MatrixResize((r + 1) , (c + 1));
 		this->row = r + 1;
 		this->col = c + 1;
-		return   this->matrix[r * (c+1) + c];//c+1ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½cÖ»ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½0ï¿½ï¿½Ê¼ï¿½ï¿½
+		return   this->matrix[r * (c+1) + c];//c+1²ÅÊÇÊµ¼ÊÁÐÊý£¬cÖ»ÊÇÁÐµÄÐòºÅ(´Ó0¿ªÊ¼£©
 	}
 	else if (c + 1 > col && r +1 <= row)
 	{
 		MatrixResize(row1 , c + 1);
 		this->row = row1;
 		this->col = c + 1;
-		return   this->matrix[r * (c + 1) + c];//c+1ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½cÖ»ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½0ï¿½ï¿½Ê¼ï¿½ï¿½
+		return   this->matrix[r * (c + 1) + c];//c+1²ÅÊÇÊµ¼ÊÁÐÊý£¬cÖ»ÊÇÁÐµÄÐòºÅ(´Ó0¿ªÊ¼£©
 	}
 }
 double XMatrix::operator()(int r, int c) const
@@ -375,7 +374,7 @@ double XMatrix::operator()(int r, int c) const
 	int col1 = this->col;
 	if (r > row1 || c > col1)
 	{
-		cout << "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô½ï¿½ï¿½" << endl;
+		cout << "The input matrix index is out of bounds" << endl;
 	}
 	else
 	{
@@ -385,7 +384,7 @@ double XMatrix::operator()(int r, int c) const
 bool XMatrix::MatrixTrans()
 {
 	int row = this->row;
-	int col = this->col;//ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	int col = this->col;//ÔÝÊ±´¢´æÔ­ÐÐÁÐÊý
 	int num = 0;
 	if (row > col)
 	{ 
@@ -398,12 +397,12 @@ bool XMatrix::MatrixTrans()
 		//	}
 		//}
 	MatrixResize(num, num);
-	}//ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½0ï¿½ï¿½ï¿½
+	}//¶à³öµÄÎ»ÖÃÓÃ0Ìî³ä
 	else
 	{
 	num = this->col;
 	MatrixResize(num , num);
-	}           //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÎªÒ»ï¿½ï¿½
+	}           //ÏÈÁîÐÐÁÐÊý±äÎªÒ»ÖÂ
 	for (int i = 0; i < num; i++)
 	{
 		for (int j = i; j < num; j++)
@@ -413,7 +412,7 @@ bool XMatrix::MatrixTrans()
 			this->matrix[j * num + i] = TransTemp;
 		}
 	}
-	//if (col > row)//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÒªÉ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»Ð©ï¿½ï¿½
+	//if (col > row)//Èç¹ûÊÇÁÐÊý´óÓÚÐÐÊý£¬ÐèÒªÉ¾µô»¥»»ºóµÄÒ»Ð©ÁÐ
 	//{
 	//	for (int m = 0; m < this->row; m++)
 	//	{
@@ -432,15 +431,15 @@ bool XMatrix::MatrixTrans()
 	//else { this->matrix.resize(row * col); }
 	MatrixResize(col, row);
 	this->col = row;
-	this->row = col;//×ªï¿½Ã£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	this->row = col;//×ªÖÃ£¬½«¾ØÕóÐÎ×´ÐÐÁÐÊý»¥»»
 	return true;
 }
 void XMatrix::MatrixResize(int Corrow,int Corcol)
 {
-	matrix.resize(this->col * this->row);//ï¿½ï¿½ï¿½ï¿½Ý´ï¿½ï¿½ï¿½Ô¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î´ï¿½ï¿½Ê¼ï¿½ï¿½
-	/*ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½*/
-	int ColIndex = Corcol - this->col;//ï¿½ï¿½ColIndex>0ï¿½ï¿½ï¿½àµ±ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½Ö®Îªï¿½ï¿½ï¿½ï¿½
-	if (ColIndex > 0)//ï¿½ï¿½ï¿½ï¿½
+	matrix.resize(this->col * this->row);//Ìá¸ßÈÝ´í£¬Ô¤·À¾ØÕóÎ´³õÊ¼»¯
+	/*ÏÈ´¦ÀíÁÐ*/
+	int ColIndex = Corcol - this->col;//ÈôColIndex>0ÔòÏàµ±ÓÚÀ©ÁÐ£¬·´Ö®ÎªËõÁÐ
+	if (ColIndex > 0)//À©ÁÐ
 	{
 		for (int m = 0; m < this->row; m++)
 		{
@@ -450,7 +449,7 @@ void XMatrix::MatrixResize(int Corrow,int Corcol)
 			}
 		}
 	}
-	else//ï¿½ï¿½ï¿½ï¿½
+	else//ËõÁÐ
 	{
 		ColIndex = -ColIndex;
 		for (int m = 0; m < this->row; m++)
@@ -468,13 +467,13 @@ void XMatrix::MatrixResize(int Corrow,int Corcol)
 		}
 	}
 	this->col = Corcol;
-	/*ï¿½Ù´ï¿½ï¿½ï¿½ï¿½ï¿½*/
+	/*ÔÙ´¦ÀíÐÐ*/
 	this->matrix.resize(Corrow * this->col);
 	this->row = Corrow;
 }
 /***************
-ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÍµÄ¾ï¿½ï¿½ï¿½Ë·ï¿½ï¿½ï¿½
-ï¿½ï¿½ß³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+Êý×éÀàÐÍµÄ¾ØÕó³Ë·¨£º
+Ìá¸ß³ÌÐò¼æÈÝÐÔ
 *************/
 void MatrixMultiply(int r1, int c1, int r2, int c2, double Z[], double a[], double z[])
 {

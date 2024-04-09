@@ -2,8 +2,8 @@
 #include"RTK.h"
 using namespace std;
 /*********************
-计算零基线函数:
-输入：基站真实坐标，流动站固定解坐标
+Calculate the zero baseline function:
+Input: the real coordinates of the base station, the fixed solution coordinates of the rover
 ********************/
 void CalZeroLine(double B[], double R[], double l[], double enu[])
 {
@@ -28,8 +28,8 @@ void RtkAlignDataIni(RtkAlignData* a)
 	}
 }
 /********************
-模糊度初始化函数：
-输入参数：观测数据，结果数据
+Ambiguity initialization function:
+Input parameters: Observation data, result data
 ********************/
 void AmbigInitial(EPOCHOBSDATA* Obs, POSRES* Res)
 {
@@ -38,11 +38,11 @@ void AmbigInitial(EPOCHOBSDATA* Obs, POSRES* Res)
 	int SysFlag = 0;
 	for (int i = 0; i < MAXCHANNUM; i++)
 	{
-		if (Obs->Satobs[i].System == UNKS)/*只处理BDS和GPS双频数据*/
+		if (Obs->Satobs[i].System == UNKS)/*Only BDS and GPS dual-band data are processed*/
 		{
 			continue;
 		}
-		if (!Obs->SatPvT[i].Valid)/*这里也必须考虑待测卫星要有PVT,此处用BasEpk->SatPvT[SdObs->SdSatObs[i].nBas*/
+		if (!Obs->SatPvT[i].Valid)/*Consider PVT of sats*/
 		{
 			continue;
 		}
@@ -58,7 +58,7 @@ void AmbigInitial(EPOCHOBSDATA* Obs, POSRES* Res)
 	}
 }
 /*******************
-计算卫地距离函数（其中不包含参考星卫地距离）
+Calculate the distance function (which does not include the distance of the reference satellite)
 *****************/
 void CalStaSatDis(double Pos_r[], EPOCHOBSDATA* Obs, DDCOBS* DDObs, RtkAlignData* DisData)
 {
@@ -81,8 +81,8 @@ void CalStaSatDis(double Pos_r[], EPOCHOBSDATA* Obs, DDCOBS* DDObs, RtkAlignData
 	}
 }
 /*******************
-计算参考卫星到地面距离函数:
-只要返回不是零就说明存在参考星卫地距离
+Calculate the distance function from the reference satellite to the ground:
+As long as the return is not zero, there is a reference satellite distance
 *****************/
 int CalRefDis(double Pos_r[], EPOCHOBSDATA* Obs, int RefPrn[], RtkAlignData* Data)
 {
@@ -109,10 +109,10 @@ int CalRefDis(double Pos_r[], EPOCHOBSDATA* Obs, int RefPrn[], RtkAlignData* Dat
 	return c;
 }
 /**************
-对B矩阵具体元素进行输入:
-这里输出的vec即为l,m,n
-输入参数依次为：
-流动站坐标，其他卫星坐标，参考星坐标，流动站参考星卫地距，流动站其他星卫地距，输出参数lmn
+Enter the specific elements of the B-matrix:
+The output vec here is l, m, n
+The input parameters are:
+Rover coordinates, other satellite coordinates, reference star coordinates, rover station reference satellite ground distance, rover station other satellite satellite ground distance, output parameter :lmn
 *************/
 void RtkBElement(double Pos_r[], double TarSatPos[], double RefSatPos[], double TarDis, double RefDis, double vec[])
 {
@@ -122,9 +122,9 @@ void RtkBElement(double Pos_r[], double TarSatPos[], double RefSatPos[], double 
 	}
 }
 /*****************
-构建Rtk最小二乘的B矩阵:
-卫星位置以BasStation的计算结果为准。
-参数：基站对齐数据，流动站对齐数据，流动站数据，基站,model:浮点解策略（0），固定解策略（1）
+Construct the B-matrix of Rtk least squares:
+Satellite positions are based on the calculations of BasStation.
+Parameters: Base Station Alignment Data, Rover Alignment Data, Rover Data, Base Station, Model: Floating-Point Solution Strategy(0), Fixed Solution Strategy(1)
 ****************/
 void RtkInputB(RtkAlignData BasSatData, RtkAlignData RovSatData, double RovPos[], SATMIDRES BasSatPos[], XMatrix& B_r, int Model)
 {
@@ -147,7 +147,7 @@ void RtkInputB(RtkAlignData BasSatData, RtkAlignData RovSatData, double RovPos[]
 				B(4 * i + m, 1) = vec[1];
 				B(4 * i + m, 2) = vec[2];
 			}
-			int col = B.col - 1;/*实际编程序列中需要-1*/
+			int col = B.col - 1;/*-1 is required in the actual programming sequence*/
 			if (BasSatData.Sys[i] == GPS)
 			{
 				B(4 * i + 2, col + 1) = CLight / GPS_L1;
@@ -174,8 +174,8 @@ void RtkInputB(RtkAlignData BasSatData, RtkAlignData RovSatData, double RovPos[]
 void RtkInputP(int GPSDDNum, int BDSDDNum, XMatrix& P_r, int Model)
 {
 	XMatrix P;
-	/*先加GPS的P阵*/
-	/*先填充对角阵*/
+	/*Add the P array of GPS first*/
+	/*Fill the diagonal array first*/
 	bool flag = (Model == 0);
 	int n = (flag) ? 4 : 2;
 	for (int i = 0; i < n * GPSDDNum; i++)
@@ -189,7 +189,7 @@ void RtkInputP(int GPSDDNum, int BDSDDNum, XMatrix& P_r, int Model)
 			P(i, i) = 1000.0 * GPSDDNum / (GPSDDNum + 1);
 		}
 	}
-	/*填充三角区域*/
+	/*Fill the triangle area*/
 	for (int m = 1; m < GPSDDNum; m++)
 	{
 		for (int i = 0 + n * m; i < n * GPSDDNum; i++)
@@ -206,9 +206,9 @@ void RtkInputP(int GPSDDNum, int BDSDDNum, XMatrix& P_r, int Model)
 			}
 		}
 	}
-	/*再加BDS的P阵*/
+	/*Plus the P array of BDS*/
 	int Allnum = GPSDDNum + BDSDDNum;
-	/*先填充对角阵*/
+
 	for (int i = n * GPSDDNum; i < n * Allnum; i++)
 	{
 		if (i % 4 < 2 && flag)
@@ -220,7 +220,6 @@ void RtkInputP(int GPSDDNum, int BDSDDNum, XMatrix& P_r, int Model)
 			P(i, i) = 1000.0 * BDSDDNum / (BDSDDNum + 1);
 		}
 	}
-	/*填充三角区域*/
 	for (int m = 1; m < BDSDDNum; m++)
 	{
 		for (int i = n * GPSDDNum + n * m; i < n * Allnum; i++)
@@ -240,18 +239,21 @@ void RtkInputP(int GPSDDNum, int BDSDDNum, XMatrix& P_r, int Model)
 	P_r = P;
 }
 /*************
-输入W矩阵元素函数：
-参数：
-流动站到参考星几何距离，流动站到Tar星几何距离，基站到参考星几何距离，基站到Tar星几何距离，双差几何距离
+Enter the W matrix element function:
+Parameter:
+Geometric distance from rover to reference star, geometric distance from rover to Tar star, 
+geometric distance from base station to reference star, geometric distance from base station to
+Tar star, and double difference geometric distance
 *************/
 void RtkWElement(double Rirho, double Rjrho, double Birho, double Bjrho, double& DDrho)
 {
 	DDrho = Rjrho - Rirho - Bjrho + Birho;
 }
 /*************
-输入W矩阵函数：
-参数：
-基站对齐数据，流动站对齐数据，双差数据，W矩阵,model:浮点解策略（0），固定解策略（1）
+Enter the W matrix function:
+Parameter:
+Base Station Alignment Data, Rover Alignment Data, Double-Difference Data, W Matrix, 
+Model: Floating-Point Solution Strategy(0), Fixed Solution Strategy(1)
 *************/
 void RtkInputW(RtkAlignData BasSatData, RtkAlignData RovSatData, DDCEPOCHOBS* DDObs, XMatrix& W_r, int model)
 {
@@ -291,7 +293,7 @@ void RtkInputW(RtkAlignData BasSatData, RtkAlignData RovSatData, DDCEPOCHOBS* DD
 	W_r = W;
 }
 /***************
-将所有双差模糊度整理成一个数组
+Organize all the double difference ambiguity into an array
 ***************/
 void GetDDNSet(double DDNSet[], DDCEPOCHOBS* DDObs)
 {
@@ -301,19 +303,17 @@ void GetDDNSet(double DDNSet[], DDCEPOCHOBS* DDObs)
 		DDNSet[2 * i + 1] = DDObs->DDValue[i].ddN[1];
 	}
 }
-/**************
-计算ratio值
-****************/
+
 void CalRatio(double Fixedrms[],double &ratio)
 {
 	ratio = Fixedrms[1] / Fixedrms[0];
 }
 /***************
-计算卫星得分:
-p:卫星结果数据
-d:卫星观测数据
-s:得分
-f:周跳情况
+Calculating Satellite Scores:
+p: Satellite result data
+d: Satellite observation data
+s: Score
+f: Weekly jump
 ****************/
 void CalSatScore(SATMIDRES  p,SATOBSDATA d, double& s,int *f,DDCEPOCHOBS o)
 {
@@ -329,9 +329,9 @@ void CalSatScore(SATMIDRES  p,SATOBSDATA d, double& s,int *f,DDCEPOCHOBS o)
 	}
 }
 /*****************
-在s中找到与d相等的索引号,否则返回-1
-n:数量，
-b:起点号
+Find an index number equal to d in s, otherwise return -1
+n: quantity,
+b: Start number
 *******************/
 int searchSamPrn(int d, int s[],int b, int n)
 {
@@ -346,25 +346,25 @@ int searchSamPrn(int d, int s[],int b, int n)
 }
 
 /*****************
-构建状态转移矩阵
+Build a state transition matrix
 ****************/
 void consEKFPhi(RTKEKF* e, DDCEPOCHOBS* d,XMatrix &Phi)
 {
-	/*XYZ部分状态转移为1，不变*/
+	/*The XYZ partial state is shifted to 1 and remains unchanged*/
 	for (int i = 0; i < 3; i++)
 	{
 		Phi(i, i) = 1;
 	}
-	/*先构建GPS部分*/
+	/*GPS part*/
 	inputPhi(e, d, Phi, GPS);
-	/*再构建BDS部分*/
+	/*BDS part*/
 	inputPhi(e, d, Phi, BDS);
 }
 
 void inputPhi(RTKEKF* e, DDCEPOCHOBS* d, XMatrix& Phi, GNSSSys s)
 {
 	int sysFlag = 0;
-	int rb = 0, cb = 0;/*行列起始索引号*/
+	int rb = 0, cb = 0;/*begining of row/col*/
 	if (s == BDS)
 	{
 		sysFlag = 1;
@@ -374,8 +374,8 @@ void inputPhi(RTKEKF* e, DDCEPOCHOBS* d, XMatrix& Phi, GNSSSys s)
 
 	bool sign = (e->refPrn[sysFlag] == d->RefPrn[sysFlag]);
 	int v = 0;
-	/*模糊度部分先看参考星是否改变*/
-	if (sign)/*参考星不变时*/
+	/*The ambiguity part first depends on whether the reference star changes*/
+	if (sign)/*When the reference star does not change*/
 	{
 		for (int i = rb; i < rb + d->DDSatNum[sysFlag]; i++)
 		{
@@ -404,7 +404,7 @@ void inputPhi(RTKEKF* e, DDCEPOCHOBS* d, XMatrix& Phi, GNSSSys s)
 					Phi(3 + 2 * i + 1, 3 + 2 * v  + 1) = 1;
 				}
 				else { d->EkfChange[3 + 2 * i + 0] = d->EkfChange[3 + 2 * i + 1] = 1;   continue; }
-				if (d->DDValue[i].TarPrn == e->refPrn[sysFlag])/*若前一颗的参考星并没有消失，则在双差模糊度上相当于取负*/
+				if (d->DDValue[i].TarPrn == e->refPrn[sysFlag])/*If the previous reference star does not disappear, it is equivalent to a negative in terms of double difference ambiguity*/
 				{
 					Phi(3 + 2 * i + 0, 3 + 2 * refInd + 0) = -1;
 					Phi(3 + 2 * i + 1, 3 + 2 * refInd + 1) = -1;
@@ -432,9 +432,9 @@ void updateE(RTKEKF* e, DDCEPOCHOBS* d)
 	e->nSats = d->Sats;
 }
 /*****************
-构建Q矩阵：
-xyz部分精度为1e-2
-模糊度部分精度设为1e-5
+Build a Q Matrix:
+The xyz part has an accuracy of 1e-2
+The ambiguity part accuracy is set to 1e-5
 ******************/
 void consEKFQ(DDCEPOCHOBS* d, XMatrix& Q)
 {
@@ -449,23 +449,20 @@ void consEKFQ(DDCEPOCHOBS* d, XMatrix& Q)
 		Q(2 * i + 1 + 3, 2 * i + 1 + 3) = CFGINFO.AmbQErr;
 	}
 }
-/*****************
-构建P矩阵
-*****************/
+
 void consEKFP(RTKEKF* e, DDCEPOCHOBS* d, XMatrix &P,XMatrix &Q,XMatrix &Phi)
 {
-	/*先以旧P矩阵更新P矩阵*/
+	/*Update the P-matrix with the old P-matrix first*/
 	XMatrix t;
 	t = Phi * P;
 	Phi.MatrixTrans();
-	P = t * Phi + Q;//此时P已经变成了最新的观测数的行列数
-	Phi.MatrixTrans();/*转置回来*/
-	//P.MatrixDis();
-	/*检测周跳，新升卫星和下降卫星，对P矩阵进行部分重初始化*/
+	P = t * Phi + Q;//At this point, P has become the number of rows and columns of the latest observations
+	Phi.MatrixTrans();
+	/*Weekly slips, new ascent satellites, and descent satellites were detected, and the P-matrix was partially reinitialized*/
 	for (int i = 0; i < d->Sats; i++)
 	{
 		int sign = 0;
-		/*周跳或者新升卫星，都要重新初始化*/
+		/*Cycle slip or newly ascended satellites must be reinitialized*/
 		if (d->DDValue[i].flag[0] == -1 || d->EkfChange[3 + 2 * i + 0] == 1)
 		{
 			EKFParryReIni(3+ 2 * i + 0, 3 +2* d->Sats, P, d->DDValue[i].Sys);
@@ -478,7 +475,7 @@ void consEKFP(RTKEKF* e, DDCEPOCHOBS* d, XMatrix &P,XMatrix &Q,XMatrix &Phi)
 }
 
 /******************
-检查双差观测值的周跳情况
+Check the cycle slip of the double-difference observations
 *****************/
 void chkDDSlip(SDSATOBS* rs, SDSATOBS* ts, DDCOBS* d)
 {
@@ -493,9 +490,9 @@ void chkDDSlip(SDSATOBS* rs, SDSATOBS* ts, DDCOBS* d)
 }
 
 /****************
-P的行向量重新初始化:
-i：需要重初始化的行号
-c：P阵总列数
+The row vector of P is reinitialized:
+i: The line number that needs to be reinitialized
+c: The total number of columns in the P array
 *************/
 void EKFParryReIni(int i,int c, XMatrix& P,GNSSSys sys)
 {
@@ -516,7 +513,7 @@ void EKFParryReIni(int i,int c, XMatrix& P,GNSSSys sys)
 	}
 }
 /****************
-输入RTK卡尔曼滤波中的L向量
+Enter the L vector in the RTK Kalman filter
 ****************/
 void RTKInputL(XMatrix B, XMatrix& L, POSRES* r, RtkAlignData BasSatData, RtkAlignData RovSatData, DDCEPOCHOBS* DDObs)
 {
@@ -533,7 +530,7 @@ void RTKInputL(XMatrix B, XMatrix& L, POSRES* r, RtkAlignData BasSatData, RtkAli
 	}
 }
 /***************
-观测噪声矩阵
+R mat
 ***************/
 void consEKFR(XMatrix& R, DDCEPOCHOBS* d)
 {
@@ -547,7 +544,7 @@ void consEKFR(XMatrix& R, DDCEPOCHOBS* d)
 	}
 }
 /**************
-计算K矩阵
+K mat
 *************/
 void calEKFK(XMatrix& K, XMatrix P, XMatrix H, XMatrix R)
 {
@@ -562,11 +559,11 @@ void calEKFK(XMatrix& K, XMatrix P, XMatrix H, XMatrix R)
 	K = temp1 * temp2;
 }
 /*****************
-状态更新完后若有新升卫星或者周跳，需要重新初始化
-x:原状态
-x_1:状态预测
-Phi:状态转移矩阵
-d:双差观测数据
+After the status is updated, if there is a new satellite or a weekly slip, it needs to be re-initialized
+x: original state
+x_1: State prediction
+Phi: State Transition Matrix
+d: Double-difference observation data
 ******************/
 void UpdateX(XMatrix x, XMatrix &x_1, XMatrix Phi, DDCEPOCHOBS* d)
 {
@@ -586,8 +583,8 @@ void UpdateX(XMatrix x, XMatrix &x_1, XMatrix Phi, DDCEPOCHOBS* d)
 
 }
 /*************
-对双差观测值清零初始化，
-注意在该函数中顺便实现记录上一次双差观测值出现的卫星号
+Initialization of the zeroing of the double-difference observations,
+Note that in this function, the satellite number that records the occurrence of the last double-difference observation is implemented in passing
 ************/
 void DDReini(DDCEPOCHOBS* d)
 {
@@ -601,7 +598,7 @@ void DDReini(DDCEPOCHOBS* d)
 	d->bFixed = false;
 	for (int i = 0; i < 2; i++) 
 	{
-		d->DDSatNum[i] = 0;    // 各卫星系统的双差数量
+		d->DDSatNum[i] = 0;    // The number of double differences for each satellite system
 		d->RefPos[i] = d->RefPrn[i] = -1;
 	}
 	for (int i = 0; i < MAXCHANNUM * 2; i++)
@@ -615,7 +612,7 @@ void DDReini(DDCEPOCHOBS* d)
 
 }
 /******************
-在EKF中通过P矩阵获得模糊度部分的Qnn
+The Qnn of the ambiguity portion is obtained by the P-matrix in EKF
 *******************/
 void EkfPGetQnn(XMatrix P, double Qnn[])
 {
@@ -630,7 +627,7 @@ void EkfPGetQnn(XMatrix P, double Qnn[])
 	Matrix2Array(Qnn_m, Qnn);
 }
 /************
-获得浮点解集合
+Get a set of floating-point solutions
 *************/
 void EkfXGetfN(XMatrix x, double fN[])
 {
@@ -640,7 +637,7 @@ void EkfXGetfN(XMatrix x, double fN[])
 	}
 }
 /*************
-利用固定解第二次观测值更新
+A second observation update with a fixed solution
 **************/
 void TwiceUpdate(XMatrix& x_1, XMatrix& P, double fixedN[])
 {
@@ -661,14 +658,14 @@ void TwiceUpdate(XMatrix& x_1, XMatrix& P, double fixedN[])
 	v = H * x_1;
 	v = L - v;
 	v = K * v;
-	x_1 = x_1 + v;/*最后更新完成*/
+	x_1 = x_1 + v;/*update finished*/
 	EyeMat(K.row, E);
 	t = K * H;
 	t = E - t;
 	P = t * P;
 }
 /**************
-记录前一个历元出现的PRN
+Record the PRN that appeared in the previous epoch
 ****************/
 void RecordPrn(DDCEPOCHOBS* o, int r[], GNSSSys s[])
 {
@@ -678,12 +675,12 @@ void RecordPrn(DDCEPOCHOBS* o, int r[], GNSSSys s[])
 		r[i] = o->DDValue[i].TarPrn;
 		s[i] = o->DDValue[i].Sys;
 	}
-	r[n] = o->RefPrn[0]; r[n + 1] = o->RefPrn[1];/*将参考星也包含进去*/
+	r[n] = o->RefPrn[0]; r[n + 1] = o->RefPrn[1];/*Include reference stars*/
 	s[n] = GPS; s[n + 1] =BDS;
 }
 
 /***************
-查找相同Prn
+Find the same Prn
 ***************/
 bool SearchPrn(DDCEPOCHOBS d,int Prn,GNSSSys Sys)
 {

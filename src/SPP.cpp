@@ -7,7 +7,7 @@ using namespace std;
 bool CompSatClkOff(GPSTIME* t, GPSEPHREC* RealEph, SATMIDRES* Mid, bool flag)
 {
 	int health = RealEph->SVHealth;
-	if (health != 0) return false;/*判断星历是否健康*/
+	if (health != 0) return false;/*health of ephemeris*/
 	GPSTIME toc;
 	double F;
 	if (RealEph->System == GPS)
@@ -20,44 +20,44 @@ bool CompSatClkOff(GPSTIME* t, GPSEPHREC* RealEph, SATMIDRES* Mid, bool flag)
 		BDST2GPST(&toc, &RealEph->TOC);
 		F = -2 * sqrt(BDS_GM) / (CLight * CLight);
 	}
-	/*计算钟差*/
+	/*Cal clock diff */
 	double tk = GPSTMius(t, &toc);
 	double delta_tr = (flag) ? F * RealEph->e * sqrt(RealEph->A) * sin(Mid->Ek) : 0;
 	double delta_tsv = RealEph->ClkBias + RealEph->ClkDrift * tk + RealEph->ClkDriftRate * tk * tk+ delta_tr;
 	Mid->SatClkOft = delta_tsv;
-	/*计算钟速*/
+	/*Cal velocity of clock diff*/
 	double delta_trDot = (flag) ? F * RealEph->e * sqrt(RealEph->A) * cos(Mid->Ek) * Mid->Ek_dot : 0;
 	double delta_tsvDot =RealEph->ClkDrift  +2* RealEph->ClkDriftRate *tk+ delta_trDot;
 	Mid->SatClkSft = delta_tsvDot;
 	Mid->Tgd1 = RealEph->TGD1;
-
+	return true;
 }
 int CompGPSSatPVT(const int Prn,  GPSTIME* t, const GPSEPHREC* Eph, SATMIDRES* Mid)
 {
-	/*计算卫星位置*/
-	double A = Eph->A; /*长半轴*/
-	double n0 = sqrt(GPS_GM / (A * A * A));/*平均运动角速度*/
+	/*Cal Sat Pos*/
+	double A = Eph->A; /*Semi-long axis*/
+	double n0 = sqrt(GPS_GM / (A * A * A));/*Average angular velocity */
 	GPSTIME toe = Eph->TOE;
-	double tk = GPSTMius(t,&toe);/*相对于星历历元的参考时间*/
-	double n = n0 + Eph->DeltaN;/*对平均角速度进行改正*/
-	double Mk = Eph->M0 + n * tk;/*计算平近点角*/
-	/*迭代计算偏近点角*/
-	const double Threshold = 1e-2 / 4e9;/*阈值设为1mm的弧长距离，即1mm/4000km的角度变化*/
+	double tk = GPSTMius(t,&toe);/*Reference time relative to ephemeris*/
+	double n = n0 + Eph->DeltaN;/*Correction is made for the average angular velocity*/
+	double Mk = Eph->M0 + n * tk;/*Calculate the flat periapsis angle*/
+	/*Iteratively calculates the perimeter point angle*/
+	const double Threshold = 1e-2 / 4e9;/*The threshold is set to the arc length distance of 1 mm, that is, the angle change of 1 mm/4000 km*/
 	double Ek = Mk, E0 = 0;
 	while (fabs(Ek - E0) > Threshold)
 	{
 		E0 = Ek;
 		Ek = Mk + Eph->e * sin(E0);
 	}
-	double vk = Countvk(Eph->e, Ek);	/*由偏近点角计算真近点角*/
-	double phik = vk + Eph->omega; /*计算升交角距*/
-	double delta_uk = Eph->Cus * sin(2 * phik) + Eph->Cuc * cos(2 * phik);/*计算二阶调和改正数*/
+	double vk = Countvk(Eph->e, Ek);	/*The true peripisis angle is calculated from the peripisis angle*/
+	double phik = vk + Eph->omega; /*Calculate the angle of intersection in spikes*/
+	double delta_uk = Eph->Cus * sin(2 * phik) + Eph->Cuc * cos(2 * phik);/*Calculate the number of second-order harmonic corrections*/
 	double delta_rk = Eph->Crs * sin(2 * phik) + Eph->Crc * cos(2 * phik);
 	double delta_ik = Eph->Cis * sin(2 * phik) + Eph->Cic * cos(2 * phik);
-	double uk = phik + delta_uk;/*升交点角距*/
-	double rk = A * (1 - Eph->e * cos(Ek)) + delta_rk;/*改正向径*/
-	double ik = Eph->i0 + delta_ik + (Eph->iDot) * tk;/*改正的轨道倾角*/
-	double Orbit_xk = rk * cos(uk);/*计算在轨道平面上的倾角*/
+	double uk = phik + delta_uk;/*Ascending intersection angular spacing*/
+	double rk = A * (1 - Eph->e * cos(Ek)) + delta_rk;/*Correct the direction*/
+	double ik = Eph->i0 + delta_ik + (Eph->iDot) * tk;/*Corrected track inclination*/
+	double Orbit_xk = rk * cos(uk);/*Calculate the inclination angle in the orbital plane*/
 	double Orbit_yk = rk * sin(uk);
 	double OMEGAk = Eph->OMEGA0 + (Eph->OMEGADot - GPS_OMEGAEARTH) * tk - GPS_OMEGAEARTH * toe.SecOfWeek;
 	Mid->SatPos[0] = Orbit_xk * cos(OMEGAk) - Orbit_yk * cos(ik) * sin(OMEGAk);
@@ -65,7 +65,7 @@ int CompGPSSatPVT(const int Prn,  GPSTIME* t, const GPSEPHREC* Eph, SATMIDRES* M
 	Mid->SatPos[2] = Orbit_yk * sin(ik);
 	Mid->Ek = Ek;
 
-	/*计算卫星速度*/
+	/*Cal sats Vel*/
 	double e = Eph->e;
 	double Ek_dot = n / (1 - e * cos(Ek));
 	double phi_dot = sqrt((1 + e) / (1 - e)) * pow((cos(vk / 2) / cos(Ek / 2)), 2) * Ek_dot;
@@ -90,41 +90,41 @@ int CompGPSSatPVT(const int Prn,  GPSTIME* t, const GPSEPHREC* Eph, SATMIDRES* M
 }
 int CompBDSSatPVT(const int Prn, GPSTIME* t, const GPSEPHREC* Eph, SATMIDRES* Mid)
 {
-	/*计算卫星位置*/
-	double A = Eph->A; /*长半轴*/
-	double n0 = sqrt(BDS_GM / (A * A * A));/*平均运动角速度*/
+	/*same with GPS*/
+	double A = Eph->A; 
+	double n0 = sqrt(BDS_GM / (A * A * A));
 	GPSTIME toe = Eph->TOE;
 	GPSTIME BDS2GPSt;
 	GPST2BDST(&BDS2GPSt, t);
-	double tk = GPSTMius(&BDS2GPSt,&toe);/*相对于星历历元的参考时间*/
-	double n = n0 + Eph->DeltaN;/*对平均角速度进行改正*/
-	double Mk = Eph->M0 + n * tk;/*计算平近点角*/
-	/*迭代计算偏近点角*/
-	const double Threshold = 1e-2 / 4e11;/*阈值设为1mm的弧长距离，即1mm/4000km的角度变化*/
+	double tk = GPSTMius(&BDS2GPSt,&toe);
+	double n = n0 + Eph->DeltaN;
+	double Mk = Eph->M0 + n * tk;
+
+	const double Threshold = 1e-2 / 4e11;
 	double Ek = Mk, E0 = 0;
 	while (fabs(Ek - E0) > Threshold)
 	{
 		E0 = Ek;
 		Ek = Mk + Eph->e * sin(E0);
 	}
-	double vk = Countvk(Eph->e, Ek);	/*由偏近点角计算真近点角*/
-	double phik = vk + Eph->omega; /*计算升交角距*/
-	double delta_uk = Eph->Cus * sin(2 * phik) + Eph->Cuc * cos(2 * phik);/*计算二阶调和改正数*/
+	double vk = Countvk(Eph->e, Ek);
+	double phik = vk + Eph->omega; 
+	double delta_uk = Eph->Cus * sin(2 * phik) + Eph->Cuc * cos(2 * phik);
 	double delta_rk = Eph->Crs * sin(2 * phik) + Eph->Crc * cos(2 * phik);
 	double delta_ik = Eph->Cis * sin(2 * phik) + Eph->Cic * cos(2 * phik);
-	double uk = phik + delta_uk;/*升交点角距*/
-	double rk = A * (1 - Eph->e * cos(Ek)) + delta_rk;/*改正向径*/
-	double ik = Eph->i0 + delta_ik + (Eph->iDot) * tk;/*改正的轨道倾角*/
-	double Orbit_xk = rk * cos(uk);/*计算在轨道平面上的倾角*/
+	double uk = phik + delta_uk;
+	double rk = A * (1 - Eph->e * cos(Ek)) + delta_rk;
+	double ik = Eph->i0 + delta_ik + (Eph->iDot) * tk;
+	double Orbit_xk = rk * cos(uk);
 	double Orbit_yk = rk * sin(uk);
-	/*需要判断是GEO(0)还是MEO、IGSO卫星(1)*/
+	/*Need to determine whether it is a GEO (0) or a MEO or IGSO satellite (1)*/
 	int SatKind = 0; 
-	/*双重判定*/
+	/*double judge*/
 	if ((Prn > 0 && Prn < 6) || (Prn < 64 && Prn>58)) SatKind = 0;
 	else SatKind = 1;
 
 	double OMEGAk,OMEGAk_dot;
-	/*计算卫星速度所需参数*/
+	
 	double e = Eph->e;
 	double Ek_dot = n / (1 - e * cos(Ek));
 	double phi_dot = sqrt((1 + e) / (1 - e)) * pow((cos(vk / 2) / cos(Ek / 2)), 2) * Ek_dot;
@@ -135,12 +135,12 @@ int CompBDSSatPVT(const int Prn, GPSTIME* t, const GPSEPHREC* Eph, SATMIDRES* Mi
 	{
 	case 1: 
 	{
-		/*位置部分*/
+		/*Pos*/
 		OMEGAk = Eph->OMEGA0 + (Eph->OMEGADot - BDS_OMEGAEARTH) * tk - BDS_OMEGAEARTH * toe.SecOfWeek;
 		Mid->SatPos[0] = Orbit_xk * cos(OMEGAk) - Orbit_yk * cos(ik) * sin(OMEGAk);
 		Mid->SatPos[1] = Orbit_xk * sin(OMEGAk) + Orbit_yk * cos(ik) * cos(OMEGAk);
 		Mid->SatPos[2] = Orbit_yk * sin(ik);
-		/*速度部分*/
+		/*Vel*/
 		OMEGAk_dot = Eph->OMEGADot - BDS_OMEGAEARTH;
 		XMatrix RDot(3, 4), Vec(4, 1), Vel(3, 1);
 		inputRDot(RDot, OMEGAk, ik, Orbit_xk, Orbit_yk);
@@ -157,7 +157,7 @@ int CompBDSSatPVT(const int Prn, GPSTIME* t, const GPSEPHREC* Eph, SATMIDRES* Mi
 	}
 	case 0:
 	{
-		/*位置部分*/
+		/*Pos*/
 		OMEGAk = Eph->OMEGA0 + Eph->OMEGADot * tk - BDS_OMEGAEARTH * toe.SecOfWeek;
 		XMatrix PosGK(3, 1), Rx(3, 3), Rz(3, 3), ResPos(3, 1);
 		PosGK(0, 0) = Orbit_xk * cos(OMEGAk) - Orbit_yk * cos(ik) * sin(OMEGAk);
@@ -170,7 +170,7 @@ int CompBDSSatPVT(const int Prn, GPSTIME* t, const GPSEPHREC* Eph, SATMIDRES* Mi
 		Mid->SatPos[0] = ResPos(0, 0);
 		Mid->SatPos[1] = ResPos(1, 0);
 		Mid->SatPos[2] = ResPos(2, 0);
-		/*速度部分*/
+		/*Vel*/
 		OMEGAk_dot = Eph->OMEGADot;
 		XMatrix temp2, temp3,Vec1(4,1),ResVel(3,1),RzDot(3,3),RDot(3,4);
 		Vec1(0, 0) = rk_dot * cos(uk) - rk * uk_dot * sin(uk);
@@ -193,18 +193,18 @@ int CompBDSSatPVT(const int Prn, GPSTIME* t, const GPSEPHREC* Eph, SATMIDRES* Mi
 	}
 	Mid->Ek = Ek;
 	Mid->Ek_dot = Ek_dot;
-	Mid->Tgd1 = Eph->TGD1;/*本程序北斗只需要用到TGD1来做修正即可*/
+	Mid->Tgd1 = Eph->TGD1;/*Beidou only needs to use TGD1 to make corrections*/
 	return 1;
 }
 double Hopfield( double H, double Elev)
 /**************
-		对流层模型,
-输入与输出参数:气象参数、测站高度、高度角(deg)
-返回值:对流层改正值,超出对流层范围返回0
+tropospheric model,
+Input and output parameters: meteorological parameters, station height, altitude angle (deg)
+Return value: tropospheric correction value, returns 0 beyond troposphere range
 *****************/
 {	
 
-	if (H > 1e4||H<-422) return 0;/*H超出对流层返回零*/
+	if (H > 1e4||H<-422) return 0;/*H returns zero beyond the troposphere*/
 	double hd = 40136 + 148.72 * (T0 - 273.16);
 	double hw = 11000.0;
 	double RH = RH0 * exp(-0.0006396 * (H - H0));
@@ -226,15 +226,14 @@ void DetectOutlier(EPOCHOBSDATA* Obs)
 	MWGF Com_Cur[MAXCHANNUM];
 	for (i = 0; i < Obs->SatNum; i++)
 	{
-		if (Obs->Satobs[i].System == UNKS) continue;/*若卫星不属于GPS或者BDS，直接跳过*/
-		DTCycleSlipIni(&Obs->Satobs[i]);/*根据内部质量标准先初步检验质量*/
+		if (Obs->Satobs[i].System == UNKS) continue;/*If the satellite does not belong to GPS or BDS, skip it directly*/
+		DTCycleSlipIni(&Obs->Satobs[i]);/*Preliminary quality inspection according to internal quality standards*/
 
-		/*先判断双拼伪距和相位数据是否完整*/
+		/*First judge whether the pseudorange and phase data are complete*/
 		if (Obs->Satobs[i].fFlag[0]==0 || Obs->Satobs[i].fFlag[1] == 0)
 		{
-			Obs->Satobs[i].Valid = false;  //卫星位置有效性与周跳无关，所以后续不会再判断卫星位置有效性
+			Obs->Satobs[i].Valid = false;  //The validity of the satellite position is not related to the cycle slip, so the validity of the satellite position will not be judged in the future
 			Obs->SatPvT[i].Valid = false;
-			//memset(Obs->ComObs + i, 0, sizeof(MWGF));    好像不能将多余的清空，这里将obs未观测到的值设为无效即可
 			continue;
 		}
 		else if(Obs->Satobs[i].fFlag[0] == -1 || Obs->Satobs[i].fFlag[1] == -1)
@@ -242,11 +241,11 @@ void DetectOutlier(EPOCHOBSDATA* Obs)
 			continue;
 		}
 		Obs->Satobs[i].Valid = true;
-		Obs->SatPvT[i].Valid = true;//若有obs观测数据，则可以一定可以计算卫星位置。
+		Obs->SatPvT[i].Valid = true;//If OBS observation data is available, the satellite position can be calculated with certainty.
 		Com_Cur[i].Prn = Obs->Satobs[i].Prn;
 		Com_Cur[i].Sys = Obs->Satobs[i].System;
 		Com_Cur[i].n = 1;
-		/*根据系统类型判断计算MW和GF值*/
+		/*MW and GF values are calculated according to the system type*/
 		CalMWGFPIF<MWGF,SATOBSDATA>(Com_Cur[i], Obs->Satobs[i]);
 		FindFlag = false;
 		for (j = 0; j < MAXCHANNUM; j++)
@@ -261,7 +260,7 @@ void DetectOutlier(EPOCHOBSDATA* Obs)
 		if(FindFlag)
 		{
 			dGF = Com_Cur[i].GF - Obs->ComObs[j].GF;
-			dMW = Com_Cur[i].MW - Obs->ComObs[j].MW;/*先计算差值dMW再计算MW的当前历元平滑值并储存*/
+			dMW = Com_Cur[i].MW - Obs->ComObs[j].MW;/*The difference dMW is calculated first, and then the current epoch smoothing value of MW is calculated and stored*/
 			if (fabs(dGF) < 5e-2 && fabs(dMW) < 3)
 			{
 				//Obs->SatPvT[i].Valid = true;
@@ -270,9 +269,9 @@ void DetectOutlier(EPOCHOBSDATA* Obs)
 				Obs->ComObs[i].Sys = Obs->ComObs[j].Sys;
 				Obs->ComObs[i].MW = (Obs->ComObs[j].n * Obs->ComObs[j].MW + Com_Cur[i].MW) / (Obs->ComObs[j].n + 1);
 				Obs->ComObs[i].n = Obs->ComObs[j].n + 1;
-				Obs->ComObs[i].PIF = Com_Cur[i].PIF;//为了与obs的PRN顺序对齐，这里按照obs的顺序排列
+				Obs->ComObs[i].PIF = Com_Cur[i].PIF;//In order to align with the PRN order of obs, here is arranged in the order of obs
 			}
-			else/*即此时发生了周跳，MW组合值应该开始新的平滑*/
+			else/*At this point, a weekly slip has occurred, and the combined MW value should start a new smoothing*/
 			{
 				//Obs->SatPvT[i].Valid = true;
 				Obs->Satobs[i].fFlag[0] = Obs->Satobs[i].fFlag[1] = -1;
@@ -280,11 +279,11 @@ void DetectOutlier(EPOCHOBSDATA* Obs)
 				Obs->ComObs[i].Sys = Com_Cur[i].Sys;
 				Obs->ComObs[i].MW = Com_Cur[i].MW;
 				Obs->ComObs[i].n =  1;
-				Obs->ComObs[i].PIF = Com_Cur[i].PIF;  //PIF与周跳是否发生无关
+				Obs->ComObs[i].PIF = Com_Cur[i].PIF;  //PIF has nothing to do with whether a cycle slip occurs or not
 			}
 			if (i != j)
 			{
-				memset(Obs->ComObs + j, 0, sizeof(MWGF));//在处理完第i个序列的观测值后，将原第j个MWGF给重置
+				memset(Obs->ComObs + j, 0, sizeof(MWGF));//After processing the observations of the i-th sequence, the original j-th MWGF was reset
 			}
 		}
 		else 
@@ -297,34 +296,35 @@ void DetectOutlier(EPOCHOBSDATA* Obs)
 		//memset(Obs->Satobs+i, 0, sizeof(SATOBSDATA));
 	}
 }
-void ComputeSatPVTAtSignalTrans( EPOCHOBSDATA* Epk, GPSEPHREC* GPSEph, GPSEPHREC* BDSEph, double UserPos[], bool flag)//flag是已经初始化接收机站坐标完成的标志，就可以把卫星高度角小于15°去掉
+void ComputeSatPVTAtSignalTrans( EPOCHOBSDATA* Epk, GPSEPHREC* GPSEph, GPSEPHREC* BDSEph, double UserPos[], bool flag)
+//flag is the flag that has initialized the coordinates of the receiver station, and the satellite altitude angle can be removed if the satellite altitude angle is less than 15锟斤拷
 {
 	extern ROVERCFGINFO CFGINFO;
-	GPSTIME t_tr, t_r;/*卫星接收信号表面时均相等*/
+	GPSTIME t_tr, t_r;/*The surface of the signal is equal when the satellite receives it*/
 	GPSEPHREC NeedEph;
-	bool EphTimeflag,EphExistFlag;//判断星历是否过期
+	bool EphTimeflag,EphExistFlag;//Determine if the ephemeris has expired
 	double P;
-	int index = 0;/*以卫星的第一个频段计算发射时刻*/
-	SATMIDRES deltaT_j;/*输出卫星定位结果和钟差*/
+	int index = 0;/*The launch moment is calculated in the first frequency band of the satellite*/
+	SATMIDRES deltaT_j;/*Output satellite positioning results and clock deviations*/
 	t_r = Epk->Time;
-	deltaT_j.SatClkOft = 0;/*初始卫星钟差设为零*/
+	deltaT_j.SatClkOft = 0;/*The initial satellite clock offset is set to zero*/
 	for (int i = 0; i < Epk->SatNum; i++)
 	{
 		EphExistFlag=AlignEphObs(Epk->Satobs + i, GPSEph, BDSEph, &NeedEph);
-		if (!EphExistFlag)//若卫星星历不存在，进入下一次循环
+		if (!EphExistFlag)//If the satellite ephemeris does not exist, it will enter the next cycle
 		{
 			Epk->SatPvT[i].Valid = false;
 			continue;
 		}
 		EphTimeflag = JudgeEphEffect(Epk->Satobs[i].System, Epk->Time, NeedEph);
-		if (!EphTimeflag)//若卫星星历过期，则进入下一次循环
+		if (!EphTimeflag)//If the satellite ephemeris does not exist, it will enter the next cycle
 		{
 			Epk->SatPvT[i].Valid = false;
 			continue;
 		}
 		if (Epk->SatPvT[i].Valid == false)
 		{
-			/*cout << "该卫星没有观测数据" << endl;*/
+			/*cout << "no Sat Obs" << endl;*/
 			continue;
 		}
 		if (flag == true && Epk->SatPvT[i].Elevation < CFGINFO.ElevThreshold)
@@ -332,7 +332,7 @@ void ComputeSatPVTAtSignalTrans( EPOCHOBSDATA* Epk, GPSEPHREC* GPSEph, GPSEPHREC
 			Epk->SatPvT[i].Valid = false;
 			continue;
 		}
-		for (int j = 0; j < 3; j++)//迭代三次,计算出正确卫星发射时刻
+		for (int j = 0; j < 3; j++)//Iterate three times to calculate the correct time of satellite launch
 		{
 			P = Epk->Satobs[i].P[index];
 			t_tr.SecOfWeek = t_r.SecOfWeek - P / CLight - deltaT_j.SatClkOft;
@@ -342,19 +342,19 @@ void ComputeSatPVTAtSignalTrans( EPOCHOBSDATA* Epk, GPSEPHREC* GPSEph, GPSEPHREC
 				t_tr.SecOfWeek = 604800 + t_tr.SecOfWeek;
 				t_tr.Week = t_tr.Week - 1;
 			}
-			CompSatClkOff( &t_tr,&NeedEph, &deltaT_j,false);/*暂时不考虑相对论效应*/
-		}/*至此，卫星信号发射时刻计算完毕*/
+			CompSatClkOff( &t_tr,&NeedEph, &deltaT_j,false);/*Relativistic effects are not considered for the time being*/
+		}/*At this point, the time of satellite signal transmission is calculated*/
 		if (Epk->Satobs[i].System == BDS)
 		{
-			CompBDSSatPVT(Epk->Satobs[i].Prn, &t_tr, &NeedEph, &deltaT_j);/*计算卫星位置速度*/
+			CompBDSSatPVT(Epk->Satobs[i].Prn, &t_tr, &NeedEph, &deltaT_j);/*Cal sat vel*/
 		}
 		else if (Epk->Satobs[i].System == GPS)
 		{
-			CompGPSSatPVT(Epk->Satobs[i].Prn, &t_tr, &NeedEph, &deltaT_j);/*计算卫星位置速度*/
+			CompGPSSatPVT(Epk->Satobs[i].Prn, &t_tr, &NeedEph, &deltaT_j);/*Cal Sat vel*/
 		}
-		CompSatClkOff(&t_tr, &NeedEph, &deltaT_j, true);/*考虑相对论效应*/
-		EarthRotateCorrect(Epk->Satobs[i].System, &deltaT_j, UserPos);/*地球自转改正*/
-		memcpy(Epk->SatPvT+i, &deltaT_j, sizeof(SATMIDRES));/*赋结果*/
+		CompSatClkOff(&t_tr, &NeedEph, &deltaT_j, true);/*Consider Relativistic effects*/
+		EarthRotateCorrect(Epk->Satobs[i].System, &deltaT_j, UserPos);/*Earth's rotation corrected*/
+		memcpy(Epk->SatPvT+i, &deltaT_j, sizeof(SATMIDRES));/*copy result*/
 		Epk->SatPvT[i].Valid = true;
 	}
 }
@@ -362,14 +362,14 @@ bool SPP(EPOCHOBSDATA* Epoch, GPSEPHREC* GPSEph, GPSEPHREC* BDSEph, POSRES* Res)
 {
 	extern ROVERCFGINFO CFGINFO;
 	LSQ ls;
-	int s, t;//总观测数，必要观测数
+	int t;//Total number of observations, number of necessary observations
 	//ofstream outfile;
-	bool flag =false; //位置初始化标志
+	bool flag =false; //Position Initialization Flag
 	//outfile.open("result.txt", ios::app);
-	double X0_R[3],deltaT_r1,deltaT_r2,i;/*定位初值和接收机钟差初值,deltaT_r1,deltaT_r2分别为GPS和BDS的钟差*/
+	double X0_R[3],deltaT_r1,deltaT_r2,i;/*The initial value of positioning and the initial value of receiver clock difference, deltaT_r1, and deltaT_r2 are the clock difference of GPS and BDS, respectively*/
 	if (Epoch->SatNum < 4)
 	{
-		cout << "解算失败，卫星数量不足" << endl;
+		cout << "The solution failed, and the number of satellites was insufficient" << endl;
 		return false;
 	}
 
@@ -396,18 +396,18 @@ bool SPP(EPOCHOBSDATA* Epoch, GPSEPHREC* GPSEph, GPSEPHREC* BDSEph, POSRES* Res)
 		ComputeSatPVTAtSignalTrans(Epoch, GPSEph, BDSEph, X0_R, flag);
 		SPPintputB(ls.B, Epoch, X0_R);
 		//B.MatrixDis();
-		int Prow = ls.B.row;/*P矩阵设为单位阵*/
+		int Prow = ls.B.row;/*The P-matrix is set to a unit matrix*/
 		if(Prow<4)  
 		{
-			cout << "卫星数量不足，SPP解算失败" << endl;
+			cout << "The number of satellites is insufficient, and the SPP solution fails" << endl;
 			return false;
 		}
-		ls.P.MatrixResize(Prow, Prow);//先把P矩阵的行列数搞好
+		ls.P.MatrixResize(Prow, Prow);
 		InputP(Prow, Epoch, false, ls.P);
 		//P.MatrixDis();
 		SPPinputW(ls.W, Epoch, X0_R);
 		//W.MatrixDis();
-		Res->SatNum = Prow;//直接在这里就把有效卫星写上
+		Res->SatNum = Prow;
 		LSQCalx(ls.B, ls.P, ls.W, ls.x, ls.Q);
 		X0_R[0] = X0_R[0] + ls.x(0, 0); 
 		X0_R[1] = X0_R[1] + ls.x(1, 0);
@@ -415,22 +415,22 @@ bool SPP(EPOCHOBSDATA* Epoch, GPSEPHREC* GPSEph, GPSEPHREC* BDSEph, POSRES* Res)
 		Res->Valid = true;
 		if (i >= 5 && fabs(ls.x(0,0)+ ls.x(1, 0)+ ls.x(2, 0))>1e-2)
 		{
-			cout << "最小二乘未收敛，定位解算失败" << endl;
+			cout << "SPP LSQ did not converge, and the positioning solution failed" << endl;
 			Res->Valid = false;
 			return false;
 		}
 		if (i > 0)
 		{
-			flag = CFGINFO.EmaFlag ;//判断是否已经迭代初始化了
+			flag = CFGINFO.EmaFlag ;//Check whether the iteration has been initialized
 		}
 		i++;
 	} while (fabs(ls.x(0, 0) + ls.x(1, 0) + ls.x(2, 0) ) > 1e-5);
 	deltaT_r1 = deltaT_r1 + ls.x(3, 0);
 	t = 4;
-	if (ls.x.row > 4)//存在BDS的钟差时
+	if (ls.x.row > 4)//When there is a clock difference in BDS
 	{
 		deltaT_r2 = deltaT_r2 + ls.x(4, 0);
-		t = 5;//存在BDS时，必要观测数才为5，否则为4
+		t = 5;
 	}
 	LSQCalPrCis(ls, ls.theta, ls.PDOP, 0);
 	memcpy(Res->Pos, X0_R, 3 * sizeof(double));
@@ -442,18 +442,17 @@ bool SPP(EPOCHOBSDATA* Epoch, GPSEPHREC* GPSEph, GPSEPHREC* BDSEph, POSRES* Res)
 }
 bool SPV(EPOCHOBSDATA* Epoch, POSRES* Res)
 {
-	/*线性方程组，无需迭代*/
+	/*A system of linear equations without iteration*/
 	LSQ ls;
-	int s, t;
 	SPVInputB(ls.B, Epoch, Res);
 	SPVInputW(ls.W,Epoch, Res);
-	int Prow = ls.B.row;/*P矩阵设为单位阵*/
+	int Prow = ls.B.row;
 	if (Prow < 4)
 	{
-		cout << "卫星数量不足，SPV解算失败" << endl;
+		cout << "no enough Sats,SPV fail!" << endl;
 		return false;
 	}
-	ls.P.MatrixResize(Prow, Prow);//先把P矩阵的行列数搞好
+	ls.P.MatrixResize(Prow, Prow);
 	for (int j = 0; j < Prow; j++)
 	{
 		ls.P(j, j) = 1;
