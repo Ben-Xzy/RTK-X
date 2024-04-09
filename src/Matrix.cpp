@@ -142,7 +142,7 @@ XMatrix XMatrix::operator*(XMatrix& newV)
 	}
 	return res;
 }
-bool XMatrix::MatrixInv()//矩阵求逆
+bool XMatrix::MatrixInv()//Inversion of the matrix
 {
 	vector<double> a(this->matrix.size());
 	vector<double> b(a.size());
@@ -167,7 +167,7 @@ bool XMatrix::MatrixInv()//矩阵求逆
 			return 0;
 		}
 
-		/* 将输入矩阵赋值给输出矩阵b，下面对b矩阵求逆，a矩阵不变 */
+		/* The input matrix is assigned to the output matrix b, and the b matrix is inverted below, and the a matrix remains unchanged */
 		for (i = 0; i < n; i++)
 		{
 			for (j = 0; j < n; j++)
@@ -179,7 +179,7 @@ bool XMatrix::MatrixInv()//矩阵求逆
 		for (k = 0; k < n; k++)
 		{
 			d = 0.0;
-			for (i = k; i < n; i++)   /* 查找右下角方阵中主元素的位置 */
+			for (i = k; i < n; i++)   /*Find the location of the main element in the square in the lower right corner */
 			{
 				for (j = k; j < n; j++)
 				{
@@ -194,13 +194,13 @@ bool XMatrix::MatrixInv()//矩阵求逆
 				}
 			}
 
-			if (d < DBL_EPSILON)   /* 主元素接近于0，矩阵不可逆 */
+			if (d < DBL_EPSILON)   /* The main element is close to 0 and the matrix is irreversible*/
 			{
 				printf("Divided by 0 in MatrixInv!\n");
 				return 0;
 			}
 
-			if (is[k] != k)  /* 对主元素所在的行与右下角方阵的首行进行调换 */
+			if (is[k] != k)  /*Swap the row of the main element with the first row of the square in the lower right corner*/
 			{
 				for (j = 0; j < n; j++)
 				{
@@ -212,7 +212,7 @@ bool XMatrix::MatrixInv()//矩阵求逆
 				}
 			}
 
-			if (js[k] != k)  /* 对主元素所在的列与右下角方阵的首列进行调换 */
+			if (js[k] != k)  /* Swap the column where the main element is located with the first column of the square in the lower right corner*/
 			{
 				for (i = 0; i < n; i++)
 				{
@@ -225,7 +225,7 @@ bool XMatrix::MatrixInv()//矩阵求逆
 			}
 
 			l = k * n + k;
-			b[l] = 1.0 / b[l];  /* 初等行变换 */
+			b[l] = 1.0 / b[l];  /* Elementary row transformations */
 			for (j = 0; j < n; j++)
 			{
 				if (j != k)
@@ -258,7 +258,7 @@ bool XMatrix::MatrixInv()//矩阵求逆
 			}
 		}
 
-		for (k = n - 1; k >= 0; k--)  /* 将上面的行列调换重新恢复 */
+		for (k = n - 1; k >= 0; k--)  /* Swap the rows and columns above to resume again*/
 		{
 			if (js[k] != k)
 			{
@@ -338,7 +338,7 @@ XMatrix::XMatrix()
 	this->col = 1;
 }
 double& XMatrix::operator()(int r, int c)
-{/*由于是从0开始索引，故对应值要+1*/
+{/*Since the index starts from 0, the corresponding value should be +1*/
 	int row1 = this->row;
 	int col1 = this->col;
 	this->matrix.resize(row1 * col1);
@@ -358,14 +358,14 @@ double& XMatrix::operator()(int r, int c)
 		MatrixResize((r + 1) , (c + 1));
 		this->row = r + 1;
 		this->col = c + 1;
-		return   this->matrix[r * (c+1) + c];//c+1才是实际列数，c只是列的序号(从0开始）
+		return   this->matrix[r * (c+1) + c];//c+1 is the actual number of columns, and c is just the ordinal number of the columns (starting from 0)
 	}
 	else if (c + 1 > col && r +1 <= row)
 	{
 		MatrixResize(row1 , c + 1);
 		this->row = row1;
 		this->col = c + 1;
-		return   this->matrix[r * (c + 1) + c];//c+1才是实际列数，c只是列的序号(从0开始）
+		return   this->matrix[r * (c + 1) + c];
 	}
 }
 double XMatrix::operator()(int r, int c) const
@@ -384,7 +384,7 @@ double XMatrix::operator()(int r, int c) const
 bool XMatrix::MatrixTrans()
 {
 	int row = this->row;
-	int col = this->col;//暂时储存原行列数
+	int col = this->col;//Temporarily store the number of rows and rows
 	int num = 0;
 	if (row > col)
 	{ 
@@ -397,12 +397,12 @@ bool XMatrix::MatrixTrans()
 		//	}
 		//}
 	MatrixResize(num, num);
-	}//多出的位置用0填充
+	}//The extra slots are filled with 0
 	else
 	{
 	num = this->col;
 	MatrixResize(num , num);
-	}           //先令行列数变为一致
+	}           //The number of shilling rows and columns becomes consistent
 	for (int i = 0; i < num; i++)
 	{
 		for (int j = i; j < num; j++)
@@ -412,7 +412,7 @@ bool XMatrix::MatrixTrans()
 			this->matrix[j * num + i] = TransTemp;
 		}
 	}
-	//if (col > row)//如果是列数大于行数，需要删掉互换后的一些列
+	//if (col > row)//The extra slots are filled with 0
 	//{
 	//	for (int m = 0; m < this->row; m++)
 	//	{
@@ -431,15 +431,15 @@ bool XMatrix::MatrixTrans()
 	//else { this->matrix.resize(row * col); }
 	MatrixResize(col, row);
 	this->col = row;
-	this->row = col;//转置，将矩阵形状行列数互换
+	this->row = col;//Transpose to swap the number of rows and columns of the matrix shape
 	return true;
 }
 void XMatrix::MatrixResize(int Corrow,int Corcol)
 {
-	matrix.resize(this->col * this->row);//提高容错，预防矩阵未初始化
-	/*先处理列*/
-	int ColIndex = Corcol - this->col;//若ColIndex>0则相当于扩列，反之为缩列
-	if (ColIndex > 0)//扩列
+	matrix.resize(this->col * this->row);//Improve fault tolerance and prevent the matrix from being initialized
+	/*Handle the columns first*/
+	int ColIndex = Corcol - this->col;//If ColIndex >0, it is equivalent to an expanded column, and vice versa
+	if (ColIndex > 0)//expand col
 	{
 		for (int m = 0; m < this->row; m++)
 		{
@@ -449,7 +449,7 @@ void XMatrix::MatrixResize(int Corrow,int Corcol)
 			}
 		}
 	}
-	else//缩列
+	else//mius col
 	{
 		ColIndex = -ColIndex;
 		for (int m = 0; m < this->row; m++)
@@ -467,13 +467,13 @@ void XMatrix::MatrixResize(int Corrow,int Corcol)
 		}
 	}
 	this->col = Corcol;
-	/*再处理行*/
+	/*Reprocess the row*/
 	this->matrix.resize(Corrow * this->col);
 	this->row = Corrow;
 }
 /***************
-数组类型的矩阵乘法：
-提高程序兼容性
+Matrix multiplication of array types:
+Improve program compatibility
 *************/
 void MatrixMultiply(int r1, int c1, int r2, int c2, double Z[], double a[], double z[])
 {

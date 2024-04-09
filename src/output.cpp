@@ -11,7 +11,7 @@ void OutPutResult(EPOCHOBSDATA* EachObs, POSRES Res, ofstream& outfile, int flag
 	BLH[1] = BLH[1] * deg;
 	if (flag == 0)
 	{
-		cout << "ภ๚ิช:";
+		cout << "Ephemeral:";
 		cout << EachObs->Time.Week << " " << EachObs->Time.SecOfWeek << " ";
 		cout.flags(ios::fixed);
 		cout.precision(4);

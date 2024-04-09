@@ -6,7 +6,7 @@
 #include"param.h"
 
 /*********************
-通用数学运算的头文件，包含了lambda方法和旋转矩阵等,主要是SPP和RTK涉及的基础数学函数
+The header file of general mathematical operations, including lambda methods and rotation matrices, etc., is mainly the basic mathematical functions involved in SPP and RTK
 *********************/
 void gauss(int n, double* L, double* Z, int i, int j);
 void perm(int n, double* L, double* D, int j, double del, double* Z);
@@ -23,7 +23,7 @@ void inputRzDot(XMatrix& RzDot, double Coe, double tk);
 void CalRho(double pos_r[], double pos_s[], double& rho);
 void LSQCalx(XMatrix B, XMatrix P, XMatrix W, XMatrix& x, XMatrix& Q);
 void LSQCalPrCis(LSQ& ls, double& theta, double& PDOP, int model);
-template <typename T, typename T2>/*模板函数头文件与源文件不能分离，故写在一起吧*/
+template <typename T, typename T2>/*The template function header file cannot be separated from the source file, so write it together*/
 void CalMWGFPIF(T& res, T2& value)
 {
 	switch (value.System)

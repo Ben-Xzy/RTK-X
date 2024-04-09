@@ -16,9 +16,9 @@ public:
 	XMatrix(double value[], int row1, int col1);
 	XMatrix(int row1, int col1);
 	XMatrix();
-	double& operator()(int r, int c);//返回引用类型,便于调用元素并修改
-	double operator()(int r, int c) const;//返回值类型，便于查看元素,不会修改任何元素
-	bool MatrixMul(XMatrix& newV, XMatrix& res);//res代表输出的矩阵结果
+	double& operator()(int r, int c);//Returns a reference type that makes it easy to call the element and modify it
+	double operator()(int r, int c) const;//Returns a value type that makes it easy to view the element and does not modify any element
+	bool MatrixMul(XMatrix& newV, XMatrix& res);
 	XMatrix operator*(XMatrix& newV);
 	bool MatrixPlus(XMatrix& newV, XMatrix& res);
 	XMatrix operator+(XMatrix& newV);

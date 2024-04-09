@@ -1,8 +1,8 @@
 #ifndef PARAM_H
 #define PARAM_H
-#define MAXCHANNUM 97 /*本来是最大96个，我们舍弃索引为0的元素，故设为97个，第一个不用*/
-#define MAXGPSPRN 33/*第一个不用*/
-#define MAXBDSPRN 65/*第一个不同*/
+#define MAXCHANNUM 97 /*Originally, it was a maximum of 96, but we discarded the element with an index of 0, so we set it to 97, and the first one was not used*/
+#define MAXGPSPRN 33/*discard fir*/
+#define MAXBDSPRN 65
 #define MAXGPSNUM 32
 #define MAXBDSNUM 64
 #define CLight   2.99792458e8
@@ -10,7 +10,7 @@
 #define GPS_OMEGAEARTH  7.2921151467e-5
 #define BDS_GM  3.986004418e14
 #define BDS_OMEGAEARTH  7.2921150e-5
-#define InitialValue 0.0 //坐标初值#pragma once
+#define InitialValue 0.0 //Initial value of Pos
 
 #define MAXRawLen       50000
 #define POLYCRC32       0xEDB88320u /* CRC32 polynomial */
@@ -42,12 +42,12 @@
 #define BDS_B1I         1561.098e6
 #define BDS_B3I         1268.520e6
 
-#define H0 0 /*海平面*/
-#define T0 288.16 /*温度*/
-#define P0 1013.25 /*气压*/
-#define RH0 0.5 /*相对湿度*/
-#define GPSLIMT 7500 /*GPS过期判断*/
-#define BDSLIMT 3900 /*BDS过期判断*/
+#define H0 0 /*sea level*/
+#define T0 288.16 /*temperature*/
+#define P0 1013.25 /*atmospheric pressure*/
+#define RH0 0.5 /*relative humidity*/
+#define GPSLIMT 7500 /*GPS expiration judgment*/
+#define BDSLIMT 3900 /*BDS expiration judgment*/
 
 #define U1(p) (*((unsigned char *)(p)))
 #define I1(p) (*((char *)(p)))

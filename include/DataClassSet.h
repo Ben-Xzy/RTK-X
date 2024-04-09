@@ -9,7 +9,7 @@
 #include<vector>
 #include"param.h"
 using namespace std;
-/*先声明所有结构体的存在*/
+
 struct SATOBSDATA;
 struct EPOCHOBSDATA;
 struct GPSEPHREC;
@@ -22,15 +22,15 @@ enum  GNSSSys
 {
 	UNKS = 0, GPS, BDS
 };
-/*每颗卫星的观测数据定义*/
+/*Definition of the observed data for each satellite*/
 struct SATOBSDATA 
 {
 	short Prn;
 	GNSSSys System;
 	double P[2], L[2], D[2];
-	bool Valid;/*判断观测数据是否完整*/
-	double SD_Psr[2],SD_Adr[2], SNR[2], locktime[2],FormLocktime[2];/*伪距标准差，相位标准差，信噪比，跟踪持续时间（无周跳）,上一历元跟踪时长*/
-	int fFlag[2],Parity[2];/*判断观测数据:-1有周跳，0无数据，1无周跳有数据,半周跳质量标准*/
+	bool Valid;/*Determine whether the observation data is complete*/
+	double SD_Psr[2],SD_Adr[2], SNR[2], locktime[2],FormLocktime[2];/*Pseudorange standard deviation, phase standard deviation, signal-to-noise ratio, tracking duration (no cycle jump), previous epoch tracking duration*/
+	int fFlag[2],Parity[2];/*Judging the observation data: -1 has a cycle slip, 0 has no data, 1 has no cycle slip with data, and the half-cycle slip quality standard*/
 
 	SATOBSDATA()
 	{
@@ -45,12 +45,12 @@ struct SATOBSDATA
 };
 struct MWGF
 {
-	short Prn;//卫星号
+	short Prn;
 	GNSSSys Sys;
 	double MW;
 	double GF;
 	double PIF;
-	int n; //平滑计数
+	int n; //Smooth counting
 	MWGF()
 	{
 		Prn = n = 0;
@@ -58,17 +58,17 @@ struct MWGF
 		MW = GF = PIF = 0.0;
 	}
 };
-/* 每颗卫星位置、速度和钟差等的中间计算结果 */
+/* Intermediate calculations for each satellite's position, speed, clock error, etc */
 struct SATMIDRES
 {
 	double SatPos[3], SatVel[3];
-	double SatClkOft, SatClkSft;/*卫星钟钟差,钟速*/
+	double SatClkOft, SatClkSft;/*Satellite clock clock difference, clock speed*/
 	double Elevation, Azimuth;
-	double Ek;/*偏近点角*/
+	double Ek;/*Near point corners*/
 	double Ek_dot;
 	double TropCorr;
 	double Tgd1, Tgd2;
-	bool Valid; //false=没有星历或星历过期,true-计算成功，若有周跳，也变false
+	bool Valid; //false=There is no ephemeris or the ephemeris is expired, true - the calculation is successful, if there is a weekly jump, it will also become false
 	SATMIDRES()
 	{
 		SatPos[0] = SatPos[1] = SatPos[2] = 0.0;
@@ -79,26 +79,26 @@ struct SATMIDRES
 		Valid = false;
 	}
 };
-/*每个历元的观测数据定义*/
+/*Definition of the observation data for each epoch*/
 struct EPOCHOBSDATA 
 {
 	/********************************************
-	1. 在粗差探测之前，ComObs保存上个历元的组合结果。粗差探测之后，保存当前历元的结果。
-	数据解码时，只能对SatObs数组memset。
-	2. ComObs和SatPVT数组存储的卫星顺序，与SatObs数组相同，即用相同循环i，可以找到该卫
-	星的观测值、卫星位置和可用性。
+	1. Before gross error detection, ComObs saves the combined results of the previous epoch. After gross error detection, the result of the current epoch is saved.
+	When decoding data, you can only memset the SatObs array.
+	2. The satellite order stored in the ComObs and SatPVT arrays is the same as that of the SatObs array, i.e. with the same loop i, the guard can be found
+	Observations, satellite positions, and availability of stars.
 	***************************************************/
 	GPSTIME Time;
 	short SatNum;
-	SATOBSDATA Satobs[MAXCHANNUM];/*只对此数组memset*/
-	MWGF ComObs[MAXCHANNUM];  /*保存上一个历元的MW值，并更新保存当前历元的MW值*/
-	SATMIDRES SatPvT[MAXCHANNUM];/*要与ComObs的卫星顺序相同，便于同一个循环*/
+	SATOBSDATA Satobs[MAXCHANNUM];/*Only memset on this array*/
+	MWGF ComObs[MAXCHANNUM];  /*Save the MW value of the previous epoch and update the MW value of the current epoch*/
+	SATMIDRES SatPvT[MAXCHANNUM];/*It should be in the same order as the satellites of ComObs, so that it can be circulated in the same cycle*/
 	EPOCHOBSDATA()
 	{
 		SatNum = 0;
 	}
 };
-/*卫星星历结构体*/
+/*锟斤拷锟斤拷锟斤拷锟斤拷锟结构锟斤拷*/
 struct GPSEPHREC
 {
 	unsigned int PRN;
@@ -109,18 +109,18 @@ struct GPSEPHREC
 	double A, M0, e, OMEGA0, i0, omega;
 	double Crs, Cuc, Cus, Cic, Cis, Crc;
 	double DeltaN, OMEGADot, iDot;
-	int SVHealth;/*0是健康，其他是异常*/
-	double TGD1;/*北斗会有两个钟*/
+	int SVHealth;/*health(0)*/
+	double TGD1;
 	
 };
 
-/*每个历元的定位结果结构体*/
+/*The positioning result structure for each epoch*/
 struct POSRES
 {
 	GPSTIME Time;
 	double Pos[3], Vel[3],ReceiTGPS,ReceiTBDS;
 	double RealPos[3];
-	bool unduFlag;/*高程异常启用标志*/
+	bool unduFlag;/*Elevation anomaly enablement flags*/
 	double PDOP, SigmaPos, SigmaVel;
 	double ReceiT_dot;
 	double AmbiL1[MAXCHANNUM];
@@ -137,15 +137,15 @@ struct POSRES
 	}
 };
 
-/*  每颗卫星的单差观测数据定义  */
+/*  Definition of monodyne observations for each satellite  */
 struct SDSATOBS
 {
 	short    Prn;
 	GNSSSys  System;
-	int      fFlag[2];/*0无数据，1代表无周跳，-1代表有周跳*/
+	int      fFlag[2];/*0 has no data, 1 means no cycle slip, and -1 means there is a cycle slip*/
 	double   P[2], L[2];   // m
-	double   DN[2];/*单差模糊度*/
-	short    nBas, nRov;   // 存储单差观测值对应的基准和流动站的数值索引号
+	double   DN[2];/*Single-difference ambiguity*/
+	short    nBas, nRov;   // Store the datum and rover index numbers corresponding to single difference observations
 
 	SDSATOBS()
 	{
@@ -157,7 +157,7 @@ struct SDSATOBS
 	}
 };
 
-/*  每个历元的单差观测数据定义  */
+/*  Definition of one-difference observation data for each epoch  */
 struct SDEPOCHOBS
 {
 	GPSTIME    Time;
@@ -171,11 +171,11 @@ struct SDEPOCHOBS
 };
 struct DDCOBS
 {
-	int TarPrn;/*其他星*/
-	GNSSSys Sys;/*其他星对应系统*/
+	int TarPrn;/*Tar sat*/
+	GNSSSys Sys;/*sys of Tar sat*/
 	double ddP[2], ddL[2];
 	double ddN[2];
-	int flag[2];/*-1代表周跳，0代表无数据，1代表有数据*/
+	int flag[2];/*-1 represents a weekly cycle, 0 represents no data, and 1 represents data*/
 	DDCOBS()
 	{
 		for (int i = 0; i < 2; i++)
@@ -186,29 +186,29 @@ struct DDCOBS
 	}
 };
 
-/*  双差相关的数据定义  */
+/*  Definition of data related to double difference  */
 struct DDCEPOCHOBS
 {
-	int RefPrn[2], RefPos[2];         // 参考星卫星号与存储位置，0=GPS; 1=BDS
-	int Sats, DDSatNum[2];            // 待估的双差模糊度数量，0=GPS; 1=BDS
+	int RefPrn[2], RefPos[2];         // Reference satellite number and storage location, 0=GPS; 1=BDS
+	int Sats, DDSatNum[2];            // The number of double-difference ambiguity to be estimated, 0=GPS; 1=BDS
 	vector<DDCOBS> DDValue;
-	double FixedAmb[MAXCHANNUM * 4];  // 包括双频最优解[0,AmbNum]和次优解[AmbNum,2*AmbNum]
-	double ResAmb[2], Ratio;          // LAMBDA浮点解中的模糊度残差
-	double  FixRMS[2];                 // 固定解定位中rms误差
-	double dPos[3],denu[3];                   // 基线向量
-	bool bFixed;                      // true为固定，false为未固定
-	int EkfChange[3 + 2 * MAXCHANNUM]; //当前历元的状态的模糊度是否需要初始化
-	int FormPrn[MAXCHANNUM];             //前一个历元的Prn和Sys
+	double FixedAmb[MAXCHANNUM * 4];  // Including dual-frequency optimal solution [0, AmbNum] and suboptimal solution [AmbNum, 2*AmbNum]
+	double ResAmb[2], Ratio;          // LAMBDA  Ambiguity residuals in floating-point solutions
+	double  FixRMS[2];                 // RMS error in fixed solution positioning
+	double dPos[3],denu[3];                   // Baseline vectors
+	bool bFixed;                      // true is fixed, false is unfixed
+	int EkfChange[3 + 2 * MAXCHANNUM]; //Whether the ambiguity of the state of the current epoch needs to be initialized
+	int FormPrn[MAXCHANNUM];             //Prn and Sys of the previous epoch
 	GNSSSys FormSys[MAXCHANNUM];
 
 	DDCEPOCHOBS()
 	{
 		int i;
 		for (i = 0; i < 2; i++) {
-			DDSatNum[i] = 0;    // 各卫星系统的双差数量
+			DDSatNum[i] = 0;    // The number of double differences for each satellite system
 			RefPos[i] = RefPrn[i] = -1;
 		}
-		Sats = 0;              // 双差卫星总数
+		Sats = 0;              // The total number of double-difference satellites
 		dPos[0] = dPos[1] = dPos[2] = 0.0;
 		ResAmb[0] = ResAmb[1] = FixRMS[0] = FixRMS[1] = Ratio = 0.0;
 		bFixed = false;
@@ -226,14 +226,14 @@ struct DDCEPOCHOBS
 		}
 	}
 };
-/*便于做RTK最小二乘,EKF的对齐数据结构*/
+/*It is convenient to do RTK least-squares, EKF aligned data structures*/
 struct RtkAlignData
 {
 	vector<double> TarDis;
-	double RefDis[2];/*参考星到站距离,0为GPS，1为BDS*/
-	int RefInd[2]; /*参考星的索引值(对应到obs的PVT索引）,0为GPS，1为BDS*/
-	vector<int> PvtInd;/*对齐之后的数据每个Dis对应的索引值集合*/
-	vector<int>Prn;/*对齐之后的数据每个Dis对应的PRN集合*/
+	double RefDis[2];/*Reference star to station distance, 0 is GPS, 1 is BDS*/
+	int RefInd[2]; /*The index value of the reference star (corresponding to the PVT index to obs), 0 is GPS, and 1 is BDS*/
+	vector<int> PvtInd;/*The set of index values corresponding to each Dis of the aligned data*/
+	vector<int>Prn;/*The set of PRNs corresponding to each Dis of the aligned data*/
 	vector<GNSSSys> Sys;
 	RtkAlignData()
 	{
@@ -242,7 +242,7 @@ struct RtkAlignData
 	}
 
 };
-/*  RTK定位的数据定义  */
+
 struct RTKDATA {
 	EPOCHOBSDATA BasEpk;
 	EPOCHOBSDATA RovEpk;
@@ -255,13 +255,13 @@ struct RTKEKF
 {
 	GPSTIME Time;
 	int refPrn[2];
-	double X[3 + MAXCHANNUM * 2], P[(3 + MAXCHANNUM * 2) * (3 + MAXCHANNUM * 2)];// 矩阵要连续，未用到的内存不管
-	int GBNum[2], nSats, nPrn[MAXCHANNUM];//索引号，卫星数，。。
-	int FixAmb[MAXCHANNUM];          // 时间更新后上个历元已经固定并传递的模糊度， 1=已固定，-1=未固定或有周跳
-	DDCEPOCHOBS DDObs, CurDDObs;           // 上一个历元和当前历元的双差观测值信息
-	SDEPOCHOBS SDObs;                 // 上一个历元的单差观测值
-	double X0[3 + MAXCHANNUM * 2], P_0[(3 + MAXCHANNUM * 2) * (3 + MAXCHANNUM * 2)];  // 状态备份
-	bool IsInit;                      // 滤波是否初始化
+	double X[3 + MAXCHANNUM * 2], P[(3 + MAXCHANNUM * 2) * (3 + MAXCHANNUM * 2)];
+	int GBNum[2], nSats, nPrn[MAXCHANNUM];//Index number, number of satellites
+	int FixAmb[MAXCHANNUM];          // The ambiguity of the previous epoch that has been fixed and passed after the time update, 1=fixed, -1=unfixed or with a cycle jump
+	DDCEPOCHOBS DDObs, CurDDObs;           // Information about the double-difference observations of the previous epoch and the current epoch
+	SDEPOCHOBS SDObs;                 // The single difference observation of the previous epoch
+	double X0[3 + MAXCHANNUM * 2], P_0[(3 + MAXCHANNUM * 2) * (3 + MAXCHANNUM * 2)];  // State backup
+	bool IsInit;                      // Whether the filter is initialized
 	RTKEKF() {
 		IsInit = false;
 		nSats = 0;
@@ -275,23 +275,23 @@ struct RTKEKF
 	}
 };
 
-struct ROVERCFGINFO   // 配置信息
+struct ROVERCFGINFO   
 {
 	string  IsFileData, RTKProcMode;      // 1=FILE, 0=COM, 1=EKF, 2=LSQ
 	string   BasNetIP, RovNetIP;   // ip address
 	int  BasNetPort, RovNetPort;       // port
-	double CodeNoise, CPNoise, AmbNoise;           // 相位，伪距,固定模糊度噪声(R)
-	double PosPIni, AmbPIni;               //位置，模糊度P阵初始化(P)
-	double PosQErr, AmbQErr;				//位置，模糊度误差转移矩阵（Q）
-	double ElevThreshold;                // 高度角阈值
-	double RatioThres;                   // Ratio检验阈值
+	double CodeNoise, CPNoise, AmbNoise;           // Phase, pseudorange, fixed ambiguity noise (R)
+	double PosPIni, AmbPIni;               //Position, Ambiguity, P-Array Initialization (P)
+	double PosQErr, AmbQErr;				//Position, Ambiguity Error Transfer Matrix (Q)
+	double ElevThreshold;                // Height angle threshold
+	double RatioThres;                   // Ratio test threshold
 
-	double RtkSynFileThre, RtkSynSktThre;//RTK对齐时间阈值
-	string DisModel;                    //显示设置
-	bool EmaFlag;						//是否启用高度角剔除
+	double RtkSynFileThre, RtkSynSktThre;//RTK alignment time threshold
+	string DisModel;                    //Display settings
+	bool EmaFlag;						//Whether to enable height angle culling
 
-	string  BasObsDatFile, RovObsDatFile;    //  观测数据的文件名
-	string  ResFile;            //  结果数据文件名
+	string  BasObsDatFile, RovObsDatFile;    //  The file name of the observation data
+	string  ResFile;            //  The name of the resulting data file
 
 
 	ROVERCFGINFO()
@@ -309,19 +309,6 @@ struct ROVERCFGINFO   // 配置信息
 		RatioThres = 3.0;
 	}
 };
-typedef struct {/*processing options type*/
-	int mode;/* positioning mode (0:SPP 1:RTK) */
-	int soltype;/* filter type (0;forward,1:backward,2:combined) */
-	int navsys;/* navigation system (1:GPS 2:BDS 3:GPS+BDS)*/
-	int nf;/* number of frequencies (1:L1,2:L1+L2)*/
-	int obstsys;/* observation time system */
-	double elmin;/* elevation mask angle (rad) */
-	int ionoopt;/* ionosphere option */
-	int tropopt;/* troposphere option */
-	double eratio;/* code/phase error ratio */
-	double err;/* measurement prior error factor */
-	double rb[3];/* base position for relative mode {x,y,z) (ecef)}*/
-} prcopt_t;
 
 struct LSQ
 {
@@ -329,12 +316,12 @@ public:
 	XMatrix B;
 	XMatrix P;
 	XMatrix W;
-	XMatrix v;   /*残差*/
-	XMatrix Q;   /*BTPB的逆*/
-	XMatrix Qnn; /*RTK解算中为模糊度协方差矩阵*/
-	XMatrix x;   /*改正数*/
-	double theta; /*中误差*/
-	double PDOP; /*几何精度因子*/
+	XMatrix v;   /*Residuals*/
+	XMatrix Q;   /*inv(BTPB)*/
+	XMatrix Qnn; /*In the RTK solution, it is the ambiguity covariance matrix*/
+	XMatrix x;   /*Number of corrections*/
+	double theta; /*Medium error*/
+	double PDOP; 
 	LSQ()
 	{
 		theta = 0.0;

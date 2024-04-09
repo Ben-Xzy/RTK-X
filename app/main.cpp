@@ -14,93 +14,6 @@ ROVERCFGINFO CFGINFO;
 using namespace std;
 int main()
 {	
-	//EPOCHOBSDATA obs;
-	//GPSEPHREC GPSep[MAXGPSPRN];
-	//GPSEPHREC BDSep[MAXBDSPRN];
-	//int Choice;
-	//int Recordflag = 0;
-	//int SppFlag=0;//�Ƿ�λ����ı�־,1��������obs���ݣ�0��������״̬��-1�������������ݿ��Ѷ���
-	//POSRES posres;
-	//int d = 0; int len=0;
-	//bool SuccFlag;
-	//ofstream outfile;
-	//outfile.open("result.txt",ios::out| ios::binary);
-	//outfile.flags(ios::fixed);
-	//outfile.precision(4);
-	//unsigned char buff[MAXRawLen]; /*���ݻ�����*/
-	//cout << "*******************��ѡ���ļ���ȡ��0����ʵʱ��������ȡ��1��********************" << endl;
-	//cin >> Choice;
-	//cout << "*************************��Ļ��ӡ��0��Ĭ�ϣ�|| �ļ������1��***********************************" << endl;
-	//cin >> Recordflag;
-	//if (Choice == 0)
-	//{
-	//	char filename[] = "C:\\Users\\���װ�������\\Music\\Desktop\\���ǳ������\\OEM719-1126\\202310301810.oem719";//202010261820.oem719
-	//	//char filename[] = "C:\\Users\\���װ�������\\Music\\Desktop\\���ǳ������\\OEM7dataV1.1\\20240301\\rove.log";
-	//	FILE* file = fopen(filename, "rb");
-	//	if (!file)
-	//	{
-	//		cout << "open file error!" << endl;
-	//		return 0;
-	//	}
-	//	while (!feof(file))
-	//	{
-
-	//		len = fread(buff + d, 1, MAXRawLen - d, file);/*len���ص��Ƕ�ȡ����*/
-	//		if (len < MAXRawLen - d)
-	//		{
-	//			cout << "��ȡ�ļ�����" << endl;
-	//		}
-	//		d = 0;//d�������кܶ࣬��Сѭ���б�Ƕ�ȡobs�������λ�ã���ѭ���б�ʾ�ض����ݿ��С��
-	//		SppFlag= DecodeNovOem7Dat(buff, d, &obs, GPSep, BDSep, &posres);
-	//		if (SppFlag == 1)
-	//		{
-	//			DetectOutlier(&obs);
-	//			SuccFlag=SPP(&obs, GPSep, BDSep, &posres);
-	//			if (!SuccFlag)
-	//			{
-	//				continue;
-	//			}
-	//			SPV(&obs, &posres);
-	//			OutPutResult(&obs, posres, outfile,Recordflag);//ostream��Ϊ��������ʱ����������ô���
-	//		}
-	//		SppFlag = 0;
-	//	}
-	//	fclose(file);
-	//}
-	//else if (Choice == 1)
-	//{
-	//	SOCKET NetGps;
-	//	if (OpenSocket(NetGps, "47.114.134.129", 7190) == false)
-	//	/*if (OpenSocket(NetGps, "8.140.46.126", 5002) == false)*/
-	//	{
-	//		printf("This ip & port was not opened.\n");
-	//		return 0;
-	//	}
-	//	while (1)
-	//	{
-	//		Sleep(980);
-	//		if ((len = recv(NetGps, (char*)buff+d, MAXRawLen-d, 0)) > 0)
-	//		{
-	//	/*		cout << len + d << endl;*/
-	//			d = 0;
-	//			SppFlag = DecodeNovOem7Dat(buff, d, &obs, GPSep, BDSep,&posres);
-	//			if (SppFlag == 1)
-	//			{
-	//				DetectOutlier(&obs);
-	//				SuccFlag=SPP(&obs, GPSep, BDSep, &posres);
-	//				if(!SuccFlag)
-	//				{
-	//					continue;
-	//				}
-	//				SPV(&obs, &posres);
-	//				OutPutResult(&obs, posres,outfile,Recordflag);
-	//			}
-	//			
-	//			SppFlag = 0;
-	//		}
-	//	}
-	//}
-	//outfile.close();
 	RTKDATA rawdata;
 	POSRES RovSppRes;
 	POSRES BasSppRes;
@@ -187,18 +100,18 @@ int main()
 			continue;
 		}
 		SPV(&rawdata.RovEpk, &RovSppRes);
-		//OutPutResult(&rawdata.RovEpk, RovSppRes, outfile, Recordflag);//ostream��Ϊ��������ʱ����������ô���
+		//OutPutResult(&rawdata.RovEpk, RovSppRes, outfile, Recordflag);
 		SPP(&rawdata.BasEpk, rawdata.GpsEph, rawdata.BdsEph, &BasSppRes);
 		if (BasSppRes.RealPos[0] == 0.0)
 		{
-			cout << "No bestPos��use Bas result of SPP" << endl;
+			cout << "No bestPos, use Bas result of SPP" << endl;
 			memcpy(BasSppRes.RealPos, BasSppRes.Pos, 3 * sizeof(double));
 		}
 		//SPV(&rawdata.BasEpk, &BasSppRes);
 		cout << endl;
 		CalStaSinDif(&rawdata.BasEpk,&rawdata.RovEpk,&BasSppRes,&RovSppRes,&rawdata.SdObs);
 		DTSinDifCySlip(&rawdata.BasEpk, &rawdata.RovEpk, &rawdata.SdObs);
-		CalStaDouDif(&rawdata.RovEpk, &rawdata.SdObs, &rawdata.DDObs);/*��Ҫ���ǰ�DDObs���б���clear��*/
+		CalStaDouDif(&rawdata.RovEpk, &rawdata.SdObs, &rawdata.DDObs);
 		if(CFGINFO.RTKProcMode == "LSQ")
 		{ 
 			RTK(&rawdata.RovEpk, &rawdata.BasEpk,&RovSppRes,&BasSppRes, &rawdata.DDObs);

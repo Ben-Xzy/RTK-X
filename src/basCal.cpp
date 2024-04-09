@@ -8,14 +8,14 @@ void inputRDot(XMatrix& RDot, double OMEGAk, double ik, double orbit_xk, double 
 }
 void inputRx(XMatrix& Rx, double phiX)
 {
-	/*Rxæÿ’Û*/
+	/*Rx mat*/
 	Rx(0, 0) = 1; Rx(0, 1) = 0; Rx(0, 2) = 0;
 	Rx(1, 0) = 0; Rx(1, 1) = cos(phiX); Rx(1, 2) = sin(phiX);
 	Rx(2, 0) = 0; Rx(2, 1) = -sin(phiX); Rx(2, 2) = cos(phiX);
 }
 void inputRz(XMatrix& Rz, double phiZ)
 {
-	/*Rzæÿ’Û*/
+	/*Rz mat*/
 	Rz(0, 0) = cos(phiZ); Rz(0, 1) = sin(phiZ); Rz(0, 2) = 0;
 	Rz(1, 0) = -sin(phiZ); Rz(1, 1) = cos(phiZ); Rz(1, 2) = 0;
 	Rz(2, 0) = 0; Rz(2, 1) = 0; Rz(2, 2) = 1;

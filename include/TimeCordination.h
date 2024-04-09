@@ -7,8 +7,8 @@
 
 
 #define PI 3.1415926535897932 
-#define eSquared  0.00669437999013 //第一偏心率平方 
-#define A1 6378137.0//半长轴
+#define eSquared  0.00669437999013 //The first eccentricity is squared 
+#define A1 6378137.0//Semi-major axis
 #define rad PI/180.0
 #define deg 180.0/PI
 struct JDTIME ;
@@ -16,10 +16,10 @@ struct COMMONTIME ;
 struct GPSTIME ;
 struct XYZ ;
 struct BLH ;
-struct NEU ;//先将类空定义一次防止后面因类名未出现导致报错
+struct NEU ;//First, define the class as empty once to prevent errors caused by the class name not appearing
 
 struct JDTIME
-	/*简化儒略日*/
+	/*Simplification of Julian Day*/
 {
 	int Days;
 	double FracDay;
@@ -34,7 +34,7 @@ struct JDTIME
 	}
 };
 struct COMMONTIME
-	/*通用时*/
+	/*General Purpose*/
 {
 	short Year;
 	int Month;
@@ -45,7 +45,7 @@ struct COMMONTIME
 	
 };
 struct GPSTIME
-	/*GPS时*/
+	/*GPS time*/
 {
 	int Week;
 	double SecOfWeek;
@@ -56,10 +56,10 @@ struct GPSTIME
 	}
 };
 struct ENU 
-/*测站地平坐标系*/
+
 {
 	XMatrix PosMat;
-	XMatrix PosStation;//基站坐标矩阵
+	XMatrix PosStation;//Base station coordinate matrix
 	double dEnu[3];
 	double Elev;
 	double Azim;
@@ -67,7 +67,7 @@ struct ENU
 	ENU(double xyz[], double station[])
 	{
 		PosMat.MatrixResize(3, 1);
-		PosStation.MatrixResize(3, 1);//定义为列向量
+		PosStation.MatrixResize(3, 1);//Defined as a column vector
 		for (int i = 0; i < 3; i++)
 		{
 			PosMat.matrix[i] = xyz[i];

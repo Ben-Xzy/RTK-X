@@ -1,11 +1,11 @@
 #include"mathf.h"
 /****************
-最小二乘获得改正数：
-B:变量系数矩阵
-P：权矩阵
-W：残差阵
-x：结果改正数
-Q：协方差阵
+Least Squares Correction Numbers:
+B: Variable coefficient matrix
+P: Weight matrix
+W: Residual array
+x: the number of result corrections
+Q: Covariance matrix
 ******************/
 void LSQCalx(XMatrix B_r, XMatrix P_r, XMatrix W_r, XMatrix& x, XMatrix& Q)
 {
@@ -21,15 +21,15 @@ void LSQCalx(XMatrix B_r, XMatrix P_r, XMatrix W_r, XMatrix& x, XMatrix& Q)
 	x = Q * B * P * W;
 }
 /***************
-最小二乘精度评定：
-ls:LSQ必要矩阵集合：B，P，W，x等等
-theta:中误差
-PDOP:几何精度因子
-model:定位模式，SPP（0），RTK（1）
+Least Squares Accuracy Evaluation:
+ls: LSQ Necessary Matrix Collection: B, P, W, X, etc
+theta: Medium error
+PDOP: Geometric Accuracy Factor
+model: Positioning mode, SPP(0), RTK(1)
 *****************/
 void LSQCalPrCis(LSQ& ls, double& theta, double& PDOP, int model)
 {
-	int s = 0, t = 0;//总观测数，必要观测数
+	int s = 0, t = 0;//Total number of observations, number of necessary observations
 	XMatrix vPv;
 	XMatrix Qnn_t;
 	t = ls.x.row;

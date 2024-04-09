@@ -56,7 +56,7 @@ int RtkObsSyn(FILE* fb, FILE* fr,RTKDATA *rawdata,POSRES *BasPos,POSRES *RovPos)
 				fileFlag = true;
 			}
 			Bd = BLen + Bd;
-			int RangeFlag = DecodeNovOem7Dat(Bbuff, Bd, &rawdata->BasEpk, rawdata->GpsEph, rawdata->BdsEph, BasPos);//1�����������й۲����ݣ����Խ��㣬-1�������ݽضϣ�������ȡ�����Ա����
+			int RangeFlag = DecodeNovOem7Dat(Bbuff, Bd, &rawdata->BasEpk, rawdata->GpsEph, rawdata->BdsEph, BasPos);
 			if (RangeFlag == 1) { break; }
 			if (fileFlag)
 			{
