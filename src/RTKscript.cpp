@@ -307,6 +307,10 @@ void GetDDNSet(double DDNSet[], DDCEPOCHOBS* DDObs)
 void CalRatio(double Fixedrms[],double &ratio)
 {
 	ratio = Fixedrms[1] / Fixedrms[0];
+	if(ratio>1e4)
+	{
+		ratio=9999;
+	}
 }
 /***************
 Calculating Satellite Scores:
