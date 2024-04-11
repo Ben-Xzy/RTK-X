@@ -272,6 +272,7 @@ void DTSinDifCySlip(EPOCHOBSDATA* BasEpk, EPOCHOBSDATA* RovEpk, SDEPOCHOBS* SdOb
 				SdObs->SdCObs[i].Prn = SdObs->SdCObs[j].Prn;
 				SdObs->SdCObs[i].Sys = SdObs->SdCObs[j].Sys;
 				SdObs->SdCObs[i].MW = (SdObs->SdCObs[j].n * SdObs->SdCObs[j].MW + Com_Cur[i].MW) / (SdObs->SdCObs[j].n + 1);
+				SdObs->SdCObs[i].GF = Com_Cur[i].GF;
 				SdObs->SdCObs[i].n = SdObs->SdCObs[j].n + 1;
 				SdObs->SdCObs[i].PIF = Com_Cur[i].PIF;
 			}
@@ -281,6 +282,7 @@ void DTSinDifCySlip(EPOCHOBSDATA* BasEpk, EPOCHOBSDATA* RovEpk, SDEPOCHOBS* SdOb
 				SdObs->SdCObs[i].Prn = Com_Cur[i].Prn;
 				SdObs->SdCObs[i].Sys = Com_Cur[i].Sys;
 				SdObs->SdCObs[i].MW = Com_Cur[i].MW;
+				SdObs->SdCObs[i].GF = Com_Cur[i].GF;
 				SdObs->SdCObs[i].n = 1;
 				SdObs->SdCObs[i].PIF = Com_Cur[i].PIF;  //PIF has nothing to do with whether a cycle slip occurs or not
 			}
@@ -558,6 +560,7 @@ void EKF(RTKEKF *e,DDCEPOCHOBS *d,POSRES *r,POSRES *b,XMatrix &P, EPOCHOBSDATA* 
 	Matrix2Array(x_1, e->X);
 	memcpy(r->Pos, e->X, 3 * sizeof(double));
 	CalZeroLine(b->RealPos, r->Pos, d->dPos, d->denu);
+	CalRatio(d->FixRMS, d->Ratio);
 	updateE(e, d);
 	delete[] Qnn;
 }

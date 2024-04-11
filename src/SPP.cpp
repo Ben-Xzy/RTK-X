@@ -268,6 +268,7 @@ void DetectOutlier(EPOCHOBSDATA* Obs)
 				Obs->ComObs[i].Prn = Obs->ComObs[j].Prn;
 				Obs->ComObs[i].Sys = Obs->ComObs[j].Sys;
 				Obs->ComObs[i].MW = (Obs->ComObs[j].n * Obs->ComObs[j].MW + Com_Cur[i].MW) / (Obs->ComObs[j].n + 1);
+				Obs->ComObs[i].GF = Com_Cur[i].GF;
 				Obs->ComObs[i].n = Obs->ComObs[j].n + 1;
 				Obs->ComObs[i].PIF = Com_Cur[i].PIF;//In order to align with the PRN order of obs, here is arranged in the order of obs
 			}
@@ -278,6 +279,7 @@ void DetectOutlier(EPOCHOBSDATA* Obs)
 				Obs->ComObs[i].Prn = Com_Cur[i].Prn;
 				Obs->ComObs[i].Sys = Com_Cur[i].Sys;
 				Obs->ComObs[i].MW = Com_Cur[i].MW;
+				Obs->ComObs[i].GF = Com_Cur[i].GF;
 				Obs->ComObs[i].n =  1;
 				Obs->ComObs[i].PIF = Com_Cur[i].PIF;  //PIF has nothing to do with whether a cycle slip occurs or not
 			}
@@ -400,6 +402,7 @@ bool SPP(EPOCHOBSDATA* Epoch, GPSEPHREC* GPSEph, GPSEPHREC* BDSEph, POSRES* Res)
 		if(Prow<4)  
 		{
 			cout << "The number of satellites is insufficient, and the SPP solution fails" << endl;
+			cout << endl;
 			return false;
 		}
 		ls.P.MatrixResize(Prow, Prow);
