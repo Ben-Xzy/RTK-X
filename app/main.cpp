@@ -22,7 +22,7 @@ int main()
 	FILE* fr=NULL;
 	SOCKET NetGpsBas, NetGpsRov;
 	ofstream outfile;
-	string ConfigFile = "config.ini";
+	string ConfigFile = "..\\..\\config\\config.ini";
 	if (!rr::GetCfgInfo(CFGINFO, ConfigFile))
 	{
 		cout << "Config file load failed!" << endl;
@@ -105,11 +105,11 @@ int main()
 			continue;
 		}
 		SPV(&rawdata.RovEpk, &RovSppRes);
-		//OutPutResult(&rawdata.RovEpk, RovSppRes, outfile, Recordflag);//ostream×÷Îªº¯Êý²ÎÊýÊ±±ØÐë²ÉÓÃÒýÓÃ´«µÝ
+		//OutPutResult(&rawdata.RovEpk, RovSppRes, outfile, Recordflag);//ostreamï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã´ï¿½ï¿½ï¿½
 		SPP(&rawdata.BasEpk, rawdata.GpsEph, rawdata.BdsEph, &BasSppRes);
 		if (!BasSppRes.realPosFlag)
 		{
-			cout << "No bestPos£¬use Bas result of SPP" << endl;
+			cout << "No bestPosï¿½ï¿½use Bas result of SPP" << endl;
 			memcpy(BasSppRes.RealPos, BasSppRes.Pos, 3 * sizeof(double));
 			if (iter > 5)
 			{
@@ -130,7 +130,7 @@ int main()
 		//cout << endl;
 		CalStaSinDif(&rawdata.BasEpk,&rawdata.RovEpk,&BasSppRes,&RovSppRes,&rawdata.SdObs);
 		DTSinDifCySlip(&rawdata.BasEpk, &rawdata.RovEpk, &rawdata.SdObs);
-		CalStaDouDif(&rawdata.RovEpk, &rawdata.SdObs, &rawdata.DDObs);/*²»ÒªÍü¼Ç°ÑDDObsµÄÁÐ±í¸øclearµô*/
+		CalStaDouDif(&rawdata.RovEpk, &rawdata.SdObs, &rawdata.DDObs);/*ï¿½ï¿½Òªï¿½ï¿½ï¿½Ç°ï¿½DDObsï¿½ï¿½ï¿½Ð±ï¿½ï¿½ï¿½clearï¿½ï¿½*/
 		if(CFGINFO.RTKProcMode == "LSQ")
 		{ 
 			RTK(&rawdata.RovEpk, &rawdata.BasEpk,&RovSppRes,&BasSppRes, &rawdata.DDObs);
@@ -138,7 +138,7 @@ int main()
 			//OutputRTK(rawdata.BasEpk.Time, rawdata.DDObs, outfile,"enu", RovSppRes);
 		}
 		//OutputRTK(rawdata.BasEpk.Time, rawdata.DDObs, outfile,"xyz");
-		//OutPutResult(&rawdata.RovEpk, RovSppRes, outfile, Recordflag);//ostream×÷Îªº¯Êý²ÎÊýÊ±±ØÐë²ÉÓÃÒýÓÃ´«µÝ
+		//OutPutResult(&rawdata.RovEpk, RovSppRes, outfile, Recordflag);//ostreamï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã´ï¿½ï¿½ï¿½
 		if (CFGINFO.RTKProcMode == "EKF")
 		{
 			if (!ekf.IsInit)
