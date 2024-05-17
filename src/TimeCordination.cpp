@@ -48,6 +48,7 @@ void JD2GPST(JDTIME* JD, GPSTIME* GPS)//The interior is simplified Julian to GPS
 void JD2Com(JDTIME *JD,COMMONTIME *COM)//Julian Day to Universal Time
 {
 	int a, b, c, d, e;
+	int count;
 	a = (int)(JD->Days + JD->FracDay + 0.5);
 	b = a + 1537;
 	c = (int)((1.0 * b - 122.1) / 365.25);
@@ -57,8 +58,13 @@ void JD2Com(JDTIME *JD,COMMONTIME *COM)//Julian Day to Universal Time
 	COM->Month= e - 1 - 12 * (int)(e * 1.0 / 14);
 	COM->Year = c - 4715 - (int)((7 + COM->Month) / 10);
 	COM->Hour= 12+int(JD->FracDay * 24);
-	COM->Minute= int((JD->FracDay * 24 - COM->Hour+12) * 60);
-	COM->Second = (JD->FracDay * 24  - COM->Hour +12)* 3600 - COM->Minute * 60;
+	COM->Minute = int((JD->FracDay * 24 - COM->Hour + 12) * 60);
+	COM->Second = (JD->FracDay * 24 - COM->Hour + 12) * 3600 - COM->Minute * 60;
+	if ((count=COM->Hour/24)>0)
+	{
+		COM->Hour = COM->Hour - count * 24;
+		COM->Day = COM->Day + count - 1;
+	}
 }
 void FromJDGetMJD(JDTIME *JD)
 {
@@ -82,7 +88,7 @@ void FromMJDGetJD(JDTIME* JD)
 	}
 	else
 	{
-		JD->Days = JD->Days + 2400001;
+		JD->Days = JD->MJDDays + 2400001;
 		JD->FracDay =JD->MJDFracDay - 0.5;
 	}
 }

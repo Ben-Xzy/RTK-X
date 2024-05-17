@@ -93,7 +93,9 @@ void SPPintputB(XMatrix& B_re, EPOCHOBSDATA* Epoch, double pos_r[])
 		double vec[3];
 		GNSSSys Sys = Epoch->Satobs[i].System;
 		SPPBelement(pos_r, Epoch->SatPvT[i].SatPos, vec);
-		B(Bindex, 0) = vec[0]; B(Bindex, 1) = vec[1]; B(Bindex, 2) = vec[2];
+		B(Bindex, 0) = vec[0]; 
+		B(Bindex, 1) = vec[1];
+		B(Bindex, 2) = vec[2];
 		if (Sys == BDS) { B(Bindex, 3) = 0; B(Bindex, 4) = 1; countBDS++; }
 		else if (Sys == GPS) { B(Bindex, 3) = 1; B(Bindex, 4) = 0; countGPS++; }
 		Bindex++;
@@ -122,6 +124,7 @@ void SPPinputW(XMatrix& W_r, EPOCHOBSDATA* Epoch, double pos_r[])
 	/*It uses an ionospheric elimination combination, so there is no TGD for GPS and TGD1 for BDS*/
 	for (int i = 0; i < Epoch->SatNum; i++)
 	{
+
 		if (!Epoch->SatPvT[i].Valid)//Invalid satellite PVT is skipped directly
 		{
 			continue;
@@ -252,26 +255,28 @@ Using the quality criteria given in the observation data, the cycle slip is prel
 FormLocktime: the tracking time of a single satellite in the previous epoch
 LatObs: the observation data of a single satellite in the post-epoch
 ****************/
-void DTCycleSlipIni(SATOBSDATA* LatObs)
+void DTCycleSlipIni(SATOBSDATA* LatObs,double Formlocktime[],bool &errFlag)
 {
-
-	double FormLocktime[2];
-	memcpy(FormLocktime, LatObs->FormLocktime, 2 * sizeof(double));
 	for (int i = 0; i < 2; i++)
 	{
 		if (LatObs->fFlag[i] == 0) continue;/*Only when fFlag is 1 can it be executed*/
 		/*for locktime*/
 		if (LatObs->locktime[i] < 6) {
 			LatObs->fFlag[i] = -1;
+			errFlag = false;
 			continue;
 		};
-		double dt = LatObs->locktime[i] - FormLocktime[i];
-		if (dt < 0) LatObs->fFlag[i] = -1;
+		double dt = LatObs->locktime[i] - Formlocktime[i];
+		if (dt < 0.0)
+		{
+			LatObs->fFlag[i] = -1;
+			cout << dt << endl;
+		}
 		/*for Parity,half of circle*/
 		if (LatObs->Parity[i] == 0)
 		{
 			LatObs->fFlag[i] = -1;
+			errFlag = false;
 		}
-		else { LatObs->fFlag[i] = 1; }
 	}
 }

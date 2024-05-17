@@ -168,7 +168,7 @@ namespace rr
 		{
 			return default_value;
 		}
-		return stoi(it_item->second.c_str());
+		return atoi(it_item->second.c_str());
 	}
 
 	float RrConfig::ReadFloat(const char* section, const char* item, const float& default_value)
@@ -189,7 +189,7 @@ namespace rr
 		{
 			return default_value;
 		}
-		return stof(it_item->second.c_str());
+		return atof(it_item->second.c_str());
 	}
 	double RrConfig::ReadDouble(const char* section, const char* item, const double& default_value)
 {

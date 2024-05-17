@@ -18,23 +18,23 @@ int RtkObsSyn(FILE* fb, FILE* fr,RTKDATA *rawdata,POSRES *BasPos,POSRES *RovPos)
 	static int Rd=0;
 	static int Bd=0;
 	int RLen=0, BLen=0;
-	bool fileFlag = false;
-	while (!feof(fr))
+	int fileFlag = feof(fr);
+	while (!fileFlag)
 	{
 		/*Read the rover data first*/
 		RLen = fread(Rbuff + Rd, 1, MAXRawLen - Rd, fr);
 		if (RLen < MAXRawLen - Rd)
 		{
-			fileFlag = true;
+			fileFlag = 1;
 		}
 		Rd = Rd + RLen;
 		int RangeFlag = DecodeNovOem7Dat(Rbuff, Rd, &rawdata->RovEpk, rawdata->GpsEph, rawdata->BdsEph, RovPos);
 		if (RangeFlag == 1) break;/*Get Obs data*/
-		if (fileFlag)
-		{
-			cout << "end of file" << endl;
-			return -1;
-		}
+	}
+	if (fileFlag!=0)
+	{
+		cout << "end of file" << endl;
+		return -1;
 	}
 	/*First, verify whether the DT after the rover data is less than the threshold*/
 	if (fabs(rawdata->RovEpk.Time.SecOfWeek - rawdata->BasEpk.Time.SecOfWeek) < CFGINFO.RtkSynFileThre)
@@ -48,21 +48,22 @@ int RtkObsSyn(FILE* fb, FILE* fr,RTKDATA *rawdata,POSRES *BasPos,POSRES *RovPos)
 	/*Decode the base station data and do data alignment, and the results are divided into three situations*/
 	while (1)
 	{
-		while (!feof(fb))
+		fileFlag = feof(fb);
+		while (!fileFlag)
 		{
 			BLen = fread(Bbuff + Bd, 1, MAXRawLen - Bd, fb);
 			if (BLen < MAXRawLen - Bd)
 			{
-				fileFlag = true;
+				fileFlag = 1;
 			}
 			Bd = BLen + Bd;
-			int RangeFlag = DecodeNovOem7Dat(Bbuff, Bd, &rawdata->BasEpk, rawdata->GpsEph, rawdata->BdsEph, BasPos);
+			int RangeFlag = DecodeNovOem7Dat(Bbuff, Bd, &rawdata->BasEpk, rawdata->GpsEph, rawdata->BdsEph, BasPos);//1代表有星历有观测数据，可以解算，-1代表数据截断，继续读取数据以便解算
 			if (RangeFlag == 1) { break; }
-			if (fileFlag)
-			{
-				cout << "end of file" << endl;
-				return -1;
-			}
+		}
+		if (fileFlag!=0)
+		{
+			cout << "end of file" << endl;
+			return -1;
 		}
 
 		if (fabs(rawdata->RovEpk.Time.SecOfWeek - rawdata->BasEpk.Time.SecOfWeek) < CFGINFO.RtkSynFileThre)
@@ -97,7 +98,7 @@ int RtkObsSyn(SOCKET& bIp, SOCKET& rIp, RTKDATA* rawdata, POSRES* BasPos, POSRES
 			int RangeFlag = DecodeNovOem7Dat(Rbuff, Rd, &rawdata->RovEpk, rawdata->GpsEph, rawdata->BdsEph, RovPos);
 			if (RangeFlag == 1)
 			{
-				cout << "Get RovObs" << endl;
+				//cout << "Get RovObs" << endl;
 				break;
 			}
 		}
@@ -126,7 +127,7 @@ int RtkObsSyn(SOCKET& bIp, SOCKET& rIp, RTKDATA* rawdata, POSRES* BasPos, POSRES
 				int RangeFlag = DecodeNovOem7Dat(Bbuff, Bd, &rawdata->BasEpk, rawdata->GpsEph, rawdata->BdsEph, BasPos);
 				if (RangeFlag == 1)
 				{
-					cout << "Get BasObs" << endl;
+					//cout << "Get BasObs" << endl;
 					break;
 				}
 			}
@@ -233,23 +234,23 @@ void DTSinDifCySlip(EPOCHOBSDATA* BasEpk, EPOCHOBSDATA* RovEpk, SDEPOCHOBS* SdOb
 	int BasInd,RovInd;
 	int j = 0;
 	bool FindFlag;
-	double dGF, dMW;
+	double dGF, dMW_N;
 	MWGF Com_Cur[MAXCHANNUM];
+	double Lambda_MW[2] = { CLight / (GPS_L1 - GPS_L2),CLight / (BDS_B1I - BDS_B3I) };
+	double Prcple_GF[2] = { CLight / GPS_L2 - CLight / GPS_L1,CLight / BDS_B3I - CLight / BDS_B1I };
+	double l = 0.0;//MW组合值波长
+	double s = 0.0;//dGF标准
+	bool errFlag = false;
 	for (int i = 0; i < MAXCHANNUM; i++)
 	{
 		/*First, determine whether there is a weekly slip based on the non-difference observations*/
 		BasInd = SdObs->SdSatObs[i].nBas;
 		RovInd = SdObs->SdSatObs[i].nRov;
-		for (int m = 0; m < 2; m++)
-		{
-			if (BasEpk->Satobs[BasInd].fFlag[m] == -1 || RovEpk->Satobs[RovInd].fFlag[m] == -1)
-			{
-				SdObs->SdSatObs[i].fFlag[m] = -1;
-			}
-		}
 		Com_Cur[i].Prn = SdObs->SdSatObs[i].Prn;
 		Com_Cur[i].Sys = SdObs->SdSatObs[i].System;
 		Com_Cur[i].n = 1;
+		l = (Com_Cur[i].Sys == GPS) ? Lambda_MW[0] : Lambda_MW[1];
+		s = (Com_Cur[i].Sys == GPS) ? Prcple_GF[0] : Prcple_GF[1];
 		/*The MWGF combination of single difference observations is performed to determine whether there is a weekly slip*/
 		CalMWGFPIF<MWGF, SDSATOBS>(Com_Cur[i], SdObs->SdSatObs[i]);
 		FindFlag = false;
@@ -265,15 +266,17 @@ void DTSinDifCySlip(EPOCHOBSDATA* BasEpk, EPOCHOBSDATA* RovEpk, SDEPOCHOBS* SdOb
 		if (FindFlag)
 		{
 			dGF = Com_Cur[i].GF - SdObs->SdCObs[j].GF;
-			dMW = Com_Cur[i].MW - SdObs->SdCObs[j].MW;
-			if (fabs(dGF) < 5e-2 && fabs(dMW) < 3)
+			dMW_N = Com_Cur[i].MW/l - SdObs->SdCObs[j].MW/l;
+			//cout << dGF<<"   " << dMW << endl;
+			if (TurboEdit(dMW_N, dGF, SdObs->SdCObs[j].Ntheta, s, errFlag))
 			{
 				SdObs->SdSatObs[i].fFlag[0] = SdObs->SdSatObs[i].fFlag[1] = 1;
 				SdObs->SdCObs[i].Prn = SdObs->SdCObs[j].Prn;
 				SdObs->SdCObs[i].Sys = SdObs->SdCObs[j].Sys;
+				SdObs->SdCObs[i].n = SdObs->SdCObs[j].n + 1;
+				SdObs->SdCObs[i].Ntheta = SdObs->SdCObs[j].Ntheta + (pow(Com_Cur[i].MW / l - SdObs->SdCObs[j].MW / l, 2) - SdObs->SdCObs[j].Ntheta) / SdObs->SdCObs[i].n;
 				SdObs->SdCObs[i].MW = (SdObs->SdCObs[j].n * SdObs->SdCObs[j].MW + Com_Cur[i].MW) / (SdObs->SdCObs[j].n + 1);
 				SdObs->SdCObs[i].GF = Com_Cur[i].GF;
-				SdObs->SdCObs[i].n = SdObs->SdCObs[j].n + 1;
 				SdObs->SdCObs[i].PIF = Com_Cur[i].PIF;
 			}
 			else/*At this point, a weekly slip has occurred, and the combined MW value should start a new smoothing*/
@@ -283,6 +286,7 @@ void DTSinDifCySlip(EPOCHOBSDATA* BasEpk, EPOCHOBSDATA* RovEpk, SDEPOCHOBS* SdOb
 				SdObs->SdCObs[i].Sys = Com_Cur[i].Sys;
 				SdObs->SdCObs[i].MW = Com_Cur[i].MW;
 				SdObs->SdCObs[i].GF = Com_Cur[i].GF;
+				SdObs->SdCObs[i].Ntheta = 0.15;
 				SdObs->SdCObs[i].n = 1;
 				SdObs->SdCObs[i].PIF = Com_Cur[i].PIF;  //PIF has nothing to do with whether a cycle slip occurs or not
 			}
@@ -296,6 +300,13 @@ void DTSinDifCySlip(EPOCHOBSDATA* BasEpk, EPOCHOBSDATA* RovEpk, SDEPOCHOBS* SdOb
 			memcpy(SdObs->SdCObs + i, Com_Cur + i, sizeof(MWGF));
 			SdObs->SdCObs[i].n = 1;
 			SdObs->SdCObs[i].PIF = Com_Cur[i].PIF;
+		}
+		for (int m = 0; m < 2; m++)
+		{
+			if (BasEpk->Satobs[BasInd].fFlag[m] == -1 || RovEpk->Satobs[RovInd].fFlag[m] == -1)
+			{
+				SdObs->SdSatObs[i].fFlag[m] = -1;
+			}
 		}
 	}
 }
@@ -324,14 +335,6 @@ void CalStaDouDif(EPOCHOBSDATA* RovEpk,SDEPOCHOBS* SdObs, DDCEPOCHOBS* DDObs)
 		}
 
 		SatFlag = (SdObs->SdSatObs[i].System == GPS) ? 0 : 1;
-
-		if (SatFlag == 0)
-		{
-			GPSnum++;
-		}
-		else {
-			BDSnum++;
-		}
 		double score = 0;
 		CalSatScore(RovEpk->SatPvT[RefInd], RovEpk->Satobs[RefInd], score, SdObs->SdSatObs[i].fFlag,*DDObs);
 		if (score > ScoreMax[SatFlag])
@@ -341,9 +344,7 @@ void CalStaDouDif(EPOCHOBSDATA* RovEpk,SDEPOCHOBS* SdObs, DDCEPOCHOBS* DDObs)
 			DDObs->RefPos[SatFlag] = i;/*The index becomes an index in a single-difference array*/
 		}
 	}
-	DDObs->DDSatNum[0] = (GPSnum > 1)? GPSnum-1:0;
-	DDObs->DDSatNum[1] = (BDSnum > 1)? BDSnum-1:0;
-	DDObs->Sats = DDObs->DDSatNum[0] + DDObs->DDSatNum[1];
+
 	for (int i = 0; i < MAXCHANNUM; i++)
 	{
 		DDCOBS tempObs;
@@ -371,9 +372,26 @@ void CalStaDouDif(EPOCHOBSDATA* RovEpk,SDEPOCHOBS* SdObs, DDCEPOCHOBS* DDObs)
 			tempObs.ddN[m] = SdObs->SdSatObs[i].DN[m] - SdObs->SdSatObs[RefInd].DN[m];
 			tempObs.flag[0] = tempObs.flag[1] = 1;
 		}
-		chkDDSlip(&SdObs->SdSatObs[RefInd], &SdObs->SdSatObs[i],&tempObs);
-		DDObs->DDValue.push_back(tempObs);
+		chkDDSlip(&SdObs->SdSatObs[RefInd], &SdObs->SdSatObs[i], &tempObs);
+		//if (tempObs.flag[0] == 1 && tempObs.flag[1] == 1)
+		//{
+			DDObs->DDValue.push_back(tempObs);
+			SatFlag = (tempObs.Sys == GPS) ? 0 : 1;
+			if (SatFlag == 0)
+			{
+				GPSnum++;
+			}
+			else {
+				BDSnum++;
+			}
+		//}
+		//else {
+		//	cout << "error!" << endl;
+		//}
 	}
+	DDObs->DDSatNum[0] = (GPSnum > 0) ? GPSnum  : 0;
+	DDObs->DDSatNum[1] = (BDSnum > 0) ? BDSnum  : 0;
+	DDObs->Sats = DDObs->DDSatNum[0] + DDObs->DDSatNum[1];
 }
 bool RTKFixed(EPOCHOBSDATA* RovObs, EPOCHOBSDATA* BasObs, POSRES* RovPos, DDCEPOCHOBS* DDObs, RtkAlignData &RAlign, RtkAlignData BAlign)
 {
@@ -382,7 +400,7 @@ bool RTKFixed(EPOCHOBSDATA* RovObs, EPOCHOBSDATA* BasObs, POSRES* RovPos, DDCEPO
 	do/*Least-squares iteration*/
 	{
 		RtkAlignDataIni(&RAlign);
-		memset(&ls, 0, sizeof(LSQ));
+		LSQDstroy(ls);
 		for (int i = 0; i < DDObs->Sats; i++)/* At this time, the satellite number of RovSatDis is the same as that of BasSatDis*/
 		{
 			CalStaSatDis(RovPos->Pos, RovObs, &DDObs->DDValue[i], &RAlign);
@@ -405,7 +423,7 @@ bool RTKFixed(EPOCHOBSDATA* RovObs, EPOCHOBSDATA* BasObs, POSRES* RovPos, DDCEPO
 			return false;
 		}
 	} while (fabs(ls.x(0, 0) + ls.x(1, 0) + ls.x(2, 0)) > 1e-6);
-	return true;
+
 
 }
 /*********************
@@ -423,7 +441,6 @@ bool RTK(EPOCHOBSDATA *RovObs,EPOCHOBSDATA *BasObs, POSRES* RovPos, POSRES* BasP
 	RtkAlignData RovSatData;
 	LSQ ls;
 	int IterNum = 0;
-	RecordPrn(DDObs, DDObs->FormPrn, DDObs->FormSys);
 	/*The geometric distance from the base station to the star to be measured*/
 	for (int i = 0; i < DDObs->Sats; i++)/*The calculated satellite sorts and sums*/
 	{
@@ -434,7 +451,7 @@ bool RTK(EPOCHOBSDATA *RovObs,EPOCHOBSDATA *BasObs, POSRES* RovPos, POSRES* BasP
 	do/*Least-squares iteration*/
 	{
 		RtkAlignDataIni(&RovSatData);
-		memset(&ls, 0, sizeof(LSQ));
+		LSQDstroy(ls);
 		for (int i = 0; i < DDObs->Sats; i++)/*At this time, the satellite number of RovSatDis is the same as that of BasSatDis*/
 		{
 			CalStaSatDis(RovPos->Pos, RovObs, &DDObs->DDValue[i], &RovSatData);
@@ -468,14 +485,12 @@ bool RTK(EPOCHOBSDATA *RovObs,EPOCHOBSDATA *BasObs, POSRES* RovPos, POSRES* BasP
 	
 	Matrix2Array(ls.Qnn, Qnn);
 	lambda(2 * DDObs->Sats, 2, DDNSet, Qnn, DDObs->FixedAmb, DDObs->FixRMS);
-	RTKFixed(RovObs, BasObs, RovPos, DDObs, RovSatData, BasSatData);
-	CalZeroLine(BasPos->RealPos, RovPos->Pos, DDObs->dPos,DDObs->denu);
 	CalRatio(DDObs->FixRMS, DDObs->Ratio);
-	//ls.Q.MatrixDis();
-	//cout << "num of iter锟斤拷" << IterNum << endl;
-	cout.flags(ios::fixed);
-	cout.precision(8);
-	//cout <<"X:  "<< DDObs->dPos[0]<<" Y:  " << DDObs->dPos[1] << " Z:  "<<DDObs->dPos[2] << endl;
+	if (DDObs->Ratio > 3.0)
+	{
+		RTKFixed(RovObs, BasObs, RovPos, DDObs, RovSatData, BasSatData);
+	}
+	CalZeroLine(BasPos->RealPos, RovPos->Pos, DDObs->dPos,DDObs->denu);
 	delete[] Qnn;
 	return true;
 }
@@ -515,6 +530,11 @@ Remember to update e after doing EKF once
 *************/
 void EKF(RTKEKF *e,DDCEPOCHOBS *d,POSRES *r,POSRES *b,XMatrix &P, EPOCHOBSDATA* RovObs, EPOCHOBSDATA* BasObs)
 {
+
+	if (d->DDValue.size() < 3)
+	{
+		int a = 0;
+	}
 	/*First, construct the state transition matrix Phi*/
 	XMatrix Phi(3 + 2 * d->Sats, 3 + 2 * e->nSats);
 	XMatrix Q(3 + 2 * d->Sats, 3 + 2 * d->Sats);
@@ -527,40 +547,50 @@ void EKF(RTKEKF *e,DDCEPOCHOBS *d,POSRES *r,POSRES *b,XMatrix &P, EPOCHOBSDATA* 
 	consEKFQ(d, Q);
 	consEKFP(e, d, P, Q, Phi);  
 	UpdateX(x, x_1, Phi, d);					//The equation of state section is constructed
+	//P.MatrixDis();
 	/*Construct observational equations*/
 	RtkAlignData BasSatData;
 	RtkAlignData RovSatData;
-	XMatrix H,L,R,K,v,E,t;
+	XMatrix H,L,R,K,v,E,t,t_R;
 	RtkAlignDataIni(&RovSatData);
 	for (int i = 0; i < d->Sats; i++)/*The calculated satellite sorts and sums*/
 	{
 		CalStaSatDis(b->RealPos, BasObs, &d->DDValue[i], &BasSatData);
-		CalStaSatDis(r->Pos, RovObs, &d->DDValue[i], &RovSatData);
+		CalStaSatDis(e->X, RovObs, &d->DDValue[i], &RovSatData);
 	}
 	CalRefDis(b->RealPos, BasObs, d->RefPrn, &BasSatData);
-	CalRefDis(r->Pos, RovObs, d->RefPrn, &RovSatData);
-	RtkInputB(BasSatData, RovSatData, r->Pos, BasObs->SatPvT, H , 0);
-	RTKInputL(H, L, r, BasSatData, RovSatData, d);
+	CalRefDis(e->X, RovObs, d->RefPrn, &RovSatData);
+	RtkInputB(BasSatData, RovSatData, e->X, BasObs->SatPvT, H , 0);
+	//H.MatrixDis();
+	RTKInputL(H, L, e->X, BasSatData, RovSatData, d);
 	consEKFR(R, d);
 	calEKFK(K, P, H, R);
+	//K.MatrixDis();
 	v= H * x_1;
 	v = L - v;
 	v = K * v;
 	x_1 = x_1 + v;/*end of update*/
 	EyeMat(K.row, E);
-	t = K * H;
-	t = E - t;
-	P = t * P;
+	t = K * H; t_R = K * R;
+	t = E - t; K.MatrixTrans();
+	P = t * P; t_R = t_R * K; K.MatrixTrans();
+	t.MatrixTrans();
+	P = P * t+t_R;//保持正定性质
 	//P.MatrixDis();
 	EkfPGetQnn(P, Qnn);
 	EkfXGetfN(x_1, ddNSet);
 	lambda(2 * d->Sats, 2, ddNSet, Qnn, d->FixedAmb, d->FixRMS);
+	CalRatio(d->FixRMS, d->Ratio);
 	/*The second observation is updated, with a fixed ambiguity*/
-	TwiceUpdate(x_1, P, d->FixedAmb);
+	if (fabs(d->Ratio)>3)
+	{
+		TwiceUpdate(x_1, P, d->FixedAmb);
+	}
+	memset(e->X, 0, (3 + MAXCHANNUM * 2) * sizeof(double));//重置x结果数组
 	Matrix2Array(x_1, e->X);
 	memcpy(r->Pos, e->X, 3 * sizeof(double));
 	CalZeroLine(b->RealPos, r->Pos, d->dPos, d->denu);
-	CalRatio(d->FixRMS, d->Ratio);
 	updateE(e, d);
+	r->PDOP=sqrt(P(0, 0) * P(0, 0) + P(1, 1) * P(1, 1) + P(2, 2) * P(2, 2));
 	delete[] Qnn;
 }

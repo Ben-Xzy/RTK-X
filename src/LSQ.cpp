@@ -53,3 +53,14 @@ void LSQCalPrCis(LSQ& ls, double& theta, double& PDOP, int model)
 		ls.Qnn = Qnn_t;
 	}
 }
+void LSQDstroy(LSQ& ls)
+{
+	std::vector<double>().swap(ls.B.matrix); ls.B.row = ls.B.col = 0;
+	std::vector<double>().swap(ls.P.matrix); ls.P.row = ls.P.col = 0;
+	std::vector<double>().swap(ls.W.matrix); ls.W.row = ls.W.col = 0;
+	std::vector<double>().swap(ls.v.matrix); ls.v.row = ls.v.col = 0;
+	std::vector<double>().swap(ls.Q.matrix); ls.Q.row = ls.Q.col = 0;
+	std::vector<double>().swap(ls.Qnn.matrix); ls.Qnn.row = ls.Qnn.col = 0;
+	std::vector<double>().swap(ls.x.matrix); ls.x.row = ls.x.col = 0;
+
+}

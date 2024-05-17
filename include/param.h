@@ -1,7 +1,7 @@
 #ifndef PARAM_H
 #define PARAM_H
 #define MAXCHANNUM 97 /*Originally, it was a maximum of 96, but we discarded the element with an index of 0, so we set it to 97, and the first one was not used*/
-#define MAXGPSPRN 33/*discard fir*/
+#define MAXGPSPRN 33/*discard fir,只是为了便于创建能容纳全部GPS卫星的数组，BDSPRN同理*/
 #define MAXBDSPRN 65
 #define MAXGPSNUM 32
 #define MAXBDSNUM 64

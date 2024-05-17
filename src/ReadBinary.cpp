@@ -59,7 +59,7 @@ int DecodeNovOem7Dat(unsigned char buff[], int& d, EPOCHOBSDATA* obs, GPSEPHREC 
                     unsigned int CRC = crc32(RealbuffAddress, msglen + HeadLen);
                     if (CRC0 != CRC)                                   //检验错误直接读取下一组数据
                     {
-  /*                      cout << "CRC check error!" << endl;*/
+                        cout << "CRC check error!" << endl;
                         continue;
                     }
                     GPSEPHREC tempEp;
@@ -85,6 +85,7 @@ int DecodeNovOem7Dat(unsigned char buff[], int& d, EPOCHOBSDATA* obs, GPSEPHREC 
                     case ID_Rawephem:
                         ReadRawEphem(RealbuffAddress); break;
                     case ID_Range:
+                        GetFormlock(obs);
                         memset(obs->Satobs, 0, MAXCHANNUM * sizeof(SATOBSDATA));
                         memset(obs->SatPvT, 0, MAXCHANNUM * sizeof(SATMIDRES));
                         obs->SatNum = 0;
@@ -98,7 +99,10 @@ int DecodeNovOem7Dat(unsigned char buff[], int& d, EPOCHOBSDATA* obs, GPSEPHREC 
                     case ID_RangeCMP:
                         ReadRangeCMP(RealbuffAddress); break;
                     case ID_BestPos:
-                        ReadBestPOS(RealbuffAddress, posres);
+                        if (!posres->realPosFlag)
+                        {
+                            ReadBestPOS(RealbuffAddress, posres);
+                        }
                         break;
                     default:break;
                     }
@@ -227,7 +231,6 @@ int ReadRange(unsigned char* buff, EPOCHOBSDATA* obs)
         obs->Satobs[n].SD_Adr[LInd] = SD_Adr;
         obs->Satobs[n].SNR[LInd] = SNR;
         //memcpy(obs->Satobs[n].FormLocktime, obs->Satobs[n].locktime,2*sizeof(double));
-        obs->Satobs[n].FormLocktime[LInd] = obs->Satobs[n].locktime[LInd];
         obs->Satobs[n].locktime[LInd] = locktime;
         if (CountFlag)
         {
@@ -364,7 +367,7 @@ int ReadPSRPOS(unsigned char* buff, POSRES* posres)
     Blh[2] = R8(H + 24);
     Blh2Xyz(Blh, Xyz);
     memcpy(posres->RealPos, Xyz, 3 * sizeof(double));
-    posres->realPosValid = true;
+    posres->realPosFlag = true;
     return 0;
 
 }
@@ -382,7 +385,7 @@ int ReadBestPOS(unsigned char* buff, POSRES* posres)
     }
     Blh2Xyz(Blh, Xyz);
     memcpy(posres->RealPos, Xyz, 3 * sizeof(double));
-    posres->realPosValid = true;
+    posres->realPosFlag = true;
     return 0;
 
 }
@@ -400,6 +403,21 @@ void JudgeFreq(EPOCHOBSDATA* Epoch)
         }
     }
 }
-
+void GetFormlock(EPOCHOBSDATA* s)
+{
+    for (int i = 0; i < s->SatNum; i++)
+    {
+        if (s->Satobs[i].System == GPS)
+        {
+            s->FormLocktime[2 * s->Satobs[i].Prn] = s->Satobs[i].locktime[0];
+            s->FormLocktime[2 * s->Satobs[i].Prn + 1] = s->Satobs[i].locktime[1];
+        }
+        else if (s->Satobs[i].System == BDS)
+        {
+            s->FormLocktime[2*MAXGPSNUM +2 * s->Satobs[i].Prn] = s->Satobs[i].locktime[0];
+            s->FormLocktime[2*MAXGPSNUM +2 * s->Satobs[i].Prn + 1] = s->Satobs[i].locktime[1];
+        }
+    }
+}
 
 

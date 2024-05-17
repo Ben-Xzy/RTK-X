@@ -32,5 +32,5 @@ void SPVInputB(XMatrix& B, EPOCHOBSDATA* Epoch, POSRES* Res);
 double SPVWElement(SATOBSDATA Satobs, SATMIDRES SatPvT, POSRES* Res);
 void InputP(int Prow, EPOCHOBSDATA* Epoch, bool flag, XMatrix& P);
 void EarthRotateCorrect(GNSSSys sys, SATMIDRES* Satpos, double Pos[]);
-void DTCycleSlipIni(SATOBSDATA* LatObs);
+void DTCycleSlipIni(SATOBSDATA* LatObs,double Formlocktime[],bool &errFlag);
 #endif

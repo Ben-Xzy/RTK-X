@@ -4,6 +4,7 @@
 #include"DataClassSet.h"
 #include"Matrix.h"
 #include"param.h"
+#include<vector>
 
 /*********************
 The header file of general mathematical operations, including lambda methods and rotation matrices, etc., is mainly the basic mathematical functions involved in SPP and RTK
@@ -46,4 +47,6 @@ void CalMWGFPIF(T& res, T2& value)
 	}
 	res.GF = value.L[0] - value.L[1];
 }
+void LSQDstroy(LSQ& ls);
+bool TurboEdit(double dMW_N, double dGF, double N_theta, double GF_Prcple,bool &errFlag);
 #endif

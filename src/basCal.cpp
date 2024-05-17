@@ -30,3 +30,23 @@ void CalRho(double pos_r[], double pos_s[], double& rho)
 {
 	rho = sqrt(pow(pos_r[0] - pos_s[0], 2) + pow(pos_r[1] - pos_s[1], 2) + pow(pos_r[2] - pos_s[2], 2));
 }
+bool TurboEdit(double dMW_N, double dGF, double N_theta,double GF_Prcple,bool &errFlag)
+{
+	if (fabs(dMW_N) > sqrt(N_theta) * 4.0)
+	{
+		if (fabs(dMW_N) > sqrt(N_theta) * 60)
+		{
+			errFlag = false;
+		}
+		return false;
+	}
+	if (fabs(dGF) > 2.0 * GF_Prcple)
+	{
+		if (fabs(dGF) > sqrt(N_theta) * 20)
+		{
+			errFlag == false;
+		}
+		return false;
+	}
+	return true;
+}

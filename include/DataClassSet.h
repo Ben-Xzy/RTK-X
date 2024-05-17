@@ -9,7 +9,7 @@
 #include<vector>
 #include"param.h"
 using namespace std;
-
+/*先声明所有结构体的存在*/
 struct SATOBSDATA;
 struct EPOCHOBSDATA;
 struct GPSEPHREC;
@@ -29,7 +29,7 @@ struct SATOBSDATA
 	GNSSSys System;
 	double P[2], L[2], D[2];
 	bool Valid;/*Determine whether the observation data is complete*/
-	double SD_Psr[2],SD_Adr[2], SNR[2], locktime[2],FormLocktime[2];/*Pseudorange standard deviation, phase standard deviation, signal-to-noise ratio, tracking duration (no cycle jump), previous epoch tracking duration*/
+	double SD_Psr[2], SD_Adr[2], SNR[2], locktime[2];/*Pseudorange standard deviation, phase standard deviation, signal-to-noise ratio, tracking duration (no cycle jump), previous epoch tracking duration*/
 	int fFlag[2],Parity[2];/*Judging the observation data: -1 has a cycle slip, 0 has no data, 1 has no cycle slip with data, and the half-cycle slip quality standard*/
 
 	SATOBSDATA()
@@ -49,6 +49,7 @@ struct MWGF
 	GNSSSys Sys;
 	double MW;
 	double GF;
+	double Ntheta;
 	double PIF;
 	int n; //Smooth counting
 	MWGF()
@@ -56,7 +57,9 @@ struct MWGF
 		Prn = n = 0;
 		Sys = UNKS;
 		MW = GF = PIF = 0.0;
+		Ntheta = 0.15;
 	}
+
 };
 /* Intermediate calculations for each satellite's position, speed, clock error, etc */
 struct SATMIDRES
@@ -88,6 +91,7 @@ struct EPOCHOBSDATA
 	2. The satellite order stored in the ComObs and SatPVT arrays is the same as that of the SatObs array, i.e. with the same loop i, the guard can be found
 	Observations, satellite positions, and availability of stars.
 	***************************************************/
+	double FormLocktime[2*MAXCHANNUM];
 	GPSTIME Time;
 	short SatNum;
 	SATOBSDATA Satobs[MAXCHANNUM];/*Only memset on this array*/
@@ -96,9 +100,13 @@ struct EPOCHOBSDATA
 	EPOCHOBSDATA()
 	{
 		SatNum = 0;
+		for (int i = 0; i < 2*MAXCHANNUM; i++)
+		{
+			FormLocktime[i] = 0.0;
+		}
 	}
 };
-/*锟斤拷锟斤拷锟斤拷锟斤拷锟结构锟斤拷*/
+/*卫星星历结构体*/
 struct GPSEPHREC
 {
 	unsigned int PRN;
@@ -127,12 +135,12 @@ struct POSRES
 	double AmbiL2[MAXCHANNUM];
 	int SatNum;
 	bool Valid;
-	bool realPosValid;
+	bool realPosFlag;
 	POSRES() 
 	{
 		Valid = false; 
 		unduFlag = true;
-		realPosValid = false;
+		realPosFlag = false;
 		RealPos[0]= RealPos[1]= RealPos[2]=0.0;
 	}
 };
@@ -242,7 +250,7 @@ struct RtkAlignData
 	}
 
 };
-
+/*  RTK定位的数据定义  */
 struct RTKDATA {
 	EPOCHOBSDATA BasEpk;
 	EPOCHOBSDATA RovEpk;
@@ -255,7 +263,8 @@ struct RTKEKF
 {
 	GPSTIME Time;
 	int refPrn[2];
-	double X[3 + MAXCHANNUM * 2], P[(3 + MAXCHANNUM * 2) * (3 + MAXCHANNUM * 2)];
+	double X[3 + MAXCHANNUM * 2];
+	XMatrix P;
 	int GBNum[2], nSats, nPrn[MAXCHANNUM];//Index number, number of satellites
 	int FixAmb[MAXCHANNUM];          // The ambiguity of the previous epoch that has been fixed and passed after the time update, 1=fixed, -1=unfixed or with a cycle jump
 	DDCEPOCHOBS DDObs, CurDDObs;           // Information about the double-difference observations of the previous epoch and the current epoch
@@ -270,12 +279,12 @@ struct RTKEKF
 		for (int i = 0; i < MAXCHANNUM; i++) nPrn[i] = FixAmb[i] = -1;
 		for (int i = 0; i < 3 + MAXCHANNUM * 2; i++) {
 			X[i] = X0[i] = 0.0;
-			for (int j = 0; j < 3 + MAXCHANNUM * 2; j++) P[i * (3 + MAXCHANNUM * 2) + j] = P_0[i * (3 + MAXCHANNUM * 2) + j] = 0.0;
+			for (int j = 0; j < 3 + MAXCHANNUM * 2; j++) P_0[i * (3 + MAXCHANNUM * 2) + j] = 0.0;
 		}
 	}
 };
 
-struct ROVERCFGINFO   
+struct ROVERCFGINFO   // 配置信息
 {
 	string  IsFileData, RTKProcMode;      // 1=FILE, 0=COM, 1=EKF, 2=LSQ
 	string   BasNetIP, RovNetIP;   // ip address

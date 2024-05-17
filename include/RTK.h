@@ -7,6 +7,7 @@
 #include"param.h"
 #include"output.h"
 #include"sockets.h"
+#include<vector>
 
 using namespace std;
 /*****************    RTK main Func  *********************/
@@ -43,7 +44,7 @@ void consEKFQ(DDCEPOCHOBS* d, XMatrix& Q);
 void chkDDSlip(SDSATOBS* rs, SDSATOBS* ts, DDCOBS* d);
 void EKFParryReIni(int i, int c, XMatrix& P, GNSSSys sys);
 void consEKFP(RTKEKF* e, DDCEPOCHOBS* d, XMatrix& P, XMatrix& Q, XMatrix& Phi);
-void RTKInputL(XMatrix B, XMatrix& L, POSRES* r, RtkAlignData BasSatData, RtkAlignData RovSatData, DDCEPOCHOBS* DDObs);
+void RTKInputL(XMatrix B, XMatrix& L, double Pos[], RtkAlignData BasSatData, RtkAlignData RovSatData, DDCEPOCHOBS* DDObs);
 void consEKFR(XMatrix& R, DDCEPOCHOBS* d);
 void calEKFK(XMatrix& K, XMatrix P, XMatrix H, XMatrix R);
 void UpdateX(XMatrix x, XMatrix& x_1, XMatrix Phi, DDCEPOCHOBS* d);
@@ -52,4 +53,5 @@ void EkfPGetQnn(XMatrix P, double Qnn[]);
 void EkfXGetfN(XMatrix x, double fN[]);
 void RecordPrn(DDCEPOCHOBS* o, int r[], GNSSSys s[]);
 bool SearchPrn(DDCEPOCHOBS d, int Prn, GNSSSys Sys);
+void SDObsReIni(SDEPOCHOBS* s);
 #endif

@@ -273,10 +273,6 @@ void RtkInputW(RtkAlignData BasSatData, RtkAlignData RovSatData, DDCEPOCHOBS* DD
 			W(4 * i + 1, 0) = DDObs->DDValue[i].ddP[1] - DDrho;
 			W(4 * i + 2, 0) = DDObs->DDValue[i].ddL[0] - DDrho - DDObs->DDValue[i].ddN[0] * Lambda[2 * SysFlag + 0];
 			W(4 * i + 3, 0) = DDObs->DDValue[i].ddL[1] - DDrho - DDObs->DDValue[i].ddN[1] * Lambda[2 * SysFlag + 1];
-			//if (W(4 * i + 0, 0) > 1e3)
-			//{
-			//	int a = 0;
-			//}
 		}
 	}
 	else if (model == 1)
@@ -307,9 +303,9 @@ void GetDDNSet(double DDNSet[], DDCEPOCHOBS* DDObs)
 void CalRatio(double Fixedrms[],double &ratio)
 {
 	ratio = Fixedrms[1] / Fixedrms[0];
-	if(ratio>1e4)
+	if (ratio > 1e4)
 	{
-		ratio=9999;
+		ratio = 9999;
 	}
 }
 /***************
@@ -407,7 +403,10 @@ void inputPhi(RTKEKF* e, DDCEPOCHOBS* d, XMatrix& Phi, GNSSSys s)
 					Phi(3 + 2 * i + 0, 3 + 2 * v  + 0) = 1;
 					Phi(3 + 2 * i + 1, 3 + 2 * v  + 1) = 1;
 				}
-				else { d->EkfChange[3 + 2 * i + 0] = d->EkfChange[3 + 2 * i + 1] = 1;   continue; }
+				else 
+				{
+					d->EkfChange[3 + 2 * i + 0] = d->EkfChange[3 + 2 * i + 1] = 1;
+				}
 				if (d->DDValue[i].TarPrn == e->refPrn[sysFlag])/*If the previous reference star does not disappear, it is equivalent to a negative in terms of double difference ambiguity*/
 				{
 					Phi(3 + 2 * i + 0, 3 + 2 * refInd + 0) = -1;
@@ -519,7 +518,7 @@ void EKFParryReIni(int i,int c, XMatrix& P,GNSSSys sys)
 /****************
 Enter the L vector in the RTK Kalman filter
 ****************/
-void RTKInputL(XMatrix B, XMatrix& L, POSRES* r, RtkAlignData BasSatData, RtkAlignData RovSatData, DDCEPOCHOBS* DDObs)
+void RTKInputL(XMatrix B, XMatrix& L, double Pos[], RtkAlignData BasSatData, RtkAlignData RovSatData, DDCEPOCHOBS* DDObs)
 {
 	double DDrho = 0;
 	int SysFlag = 0;
@@ -527,10 +526,10 @@ void RTKInputL(XMatrix B, XMatrix& L, POSRES* r, RtkAlignData BasSatData, RtkAli
 	{
 		SysFlag = (BasSatData.Sys[i] == GPS) ? 0 : 1;
 		RtkWElement(RovSatData.RefDis[SysFlag], RovSatData.TarDis[i], BasSatData.RefDis[SysFlag], BasSatData.TarDis[i], DDrho);
-		L(4 * i + 0, 0) = DDObs->DDValue[i].ddP[0] - DDrho + B(4 * i + 0, 0) * r->Pos[0] + B(4 * i + 0, 1) * r->Pos[1] + B(4 * i + 0, 2) * r->Pos[2];
-		L(4 * i + 1, 0) = DDObs->DDValue[i].ddP[1] - DDrho + B(4 * i + 1, 0) * r->Pos[0] + B(4 * i + 1, 1) * r->Pos[1] + B(4 * i + 1, 2) * r->Pos[2];
-		L(4 * i + 2, 0) = DDObs->DDValue[i].ddL[0] - DDrho + B(4 * i + 2, 0) * r->Pos[0] + B(4 * i + 2, 1) * r->Pos[1] + B(4 * i + 2, 2) * r->Pos[2];
-		L(4 * i + 3, 0) = DDObs->DDValue[i].ddL[1] - DDrho + B(4 * i + 3, 0) * r->Pos[0] + B(4 * i + 3, 1) * r->Pos[1] + B(4 * i + 3, 2) * r->Pos[2];
+		L(4 * i + 0, 0) = DDObs->DDValue[i].ddP[0] - DDrho + B(4 * i + 0, 0) * Pos[0] + B(4 * i + 0, 1) * Pos[1] + B(4 * i + 0, 2) * Pos[2];
+		L(4 * i + 1, 0) = DDObs->DDValue[i].ddP[1] - DDrho + B(4 * i + 1, 0) * Pos[0] + B(4 * i + 1, 1) * Pos[1] + B(4 * i + 1, 2) * Pos[2];
+		L(4 * i + 2, 0) = DDObs->DDValue[i].ddL[0] - DDrho + B(4 * i + 2, 0) * Pos[0] + B(4 * i + 2, 1) * Pos[1] + B(4 * i + 2, 2) * Pos[2];
+		L(4 * i + 3, 0) = DDObs->DDValue[i].ddL[1] - DDrho + B(4 * i + 3, 0) * Pos[0] + B(4 * i + 3, 1) * Pos[1] + B(4 * i + 3, 2) * Pos[2];
 	}
 }
 /***************
@@ -554,9 +553,13 @@ void calEKFK(XMatrix& K, XMatrix P, XMatrix H, XMatrix R)
 {
 	XMatrix temp1,temp2;
 	H.MatrixTrans();
+	//H.MatrixDis();
+	//P.MatrixDis();
 	temp1 = P * H;
+	//temp1.MatrixDis();
 	H.MatrixTrans();
 	temp2 = H * P;
+	//temp2.MatrixDis();
 	H.MatrixTrans();
 	temp2 = temp2 * H + R;
 	temp2.MatrixInv();
@@ -595,9 +598,11 @@ void DDReini(DDCEPOCHOBS* d)
 	memset(d->FormPrn, 0, MAXCHANNUM * sizeof(int));
 	memset(d->FormSys, UNKS, MAXCHANNUM * sizeof(GNSSSys));
 	RecordPrn(d, d->FormPrn, d->FormSys);
-	d->DDValue.clear();
+	//d->DDValue.clear();
+	std::vector<DDCOBS>().swap(d->DDValue);
 	d->Sats = 0;
 	d->dPos[0] = d->dPos[1] = d->dPos[2] = 0.0;
+	d->denu[0] = d->denu[1] = d->denu[2] = 0.0;
 	d->ResAmb[0] = d->ResAmb[1] = d->FixRMS[0] = d->FixRMS[1] = d->Ratio = 0.0;
 	d->bFixed = false;
 	for (int i = 0; i < 2; i++) 
@@ -647,7 +652,7 @@ void TwiceUpdate(XMatrix& x_1, XMatrix& P, double fixedN[])
 {
 	extern ROVERCFGINFO CFGINFO;
 	XMatrix L,H,R;
-	XMatrix K, v, E, t;
+	XMatrix K, v, E, t, t_R;
 	for (int i = 0; i < x_1.row ; i++)
 	{
 		R(i, i) = CFGINFO.AmbNoise;
@@ -664,9 +669,11 @@ void TwiceUpdate(XMatrix& x_1, XMatrix& P, double fixedN[])
 	v = K * v;
 	x_1 = x_1 + v;/*update finished*/
 	EyeMat(K.row, E);
-	t = K * H;
-	t = E - t;
-	P = t * P;
+	t = K * H; t_R = K * R;
+	t = E - t; K.MatrixTrans();
+	P = t * P; t_R = t_R * K; K.MatrixTrans();
+	t.MatrixTrans();
+	P = P * t + t_R;//保持正定性质
 }
 /**************
 Record the PRN that appeared in the previous epoch
@@ -696,4 +703,11 @@ bool SearchPrn(DDCEPOCHOBS d,int Prn,GNSSSys Sys)
 		}
 	}
 	return false;
+}
+void SDObsReIni(SDEPOCHOBS* s)
+{
+	memset(&s->Time, 0, sizeof(GPSTIME));
+	s->SatNum = 0;
+	memset(&s->SdSatObs, 0, MAXCHANNUM * sizeof(SDSATOBS));
+	//memset(&s->SdCObs, 0, MAXCHANNUM * sizeof(MWGF));
 }

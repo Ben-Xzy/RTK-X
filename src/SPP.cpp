@@ -222,31 +222,45 @@ void DetectOutlier(EPOCHOBSDATA* Obs)
 {
 	int i, j, Thenum = 0;
 	bool FindFlag;
-	double dGF, dMW;
+	double dGF=0.0, dMW_N=0.0;
 	MWGF Com_Cur[MAXCHANNUM];
+	double Lambda_MW[2] = { CLight / (GPS_L1 - GPS_L2),CLight / (BDS_B1I - BDS_B3I) };
+	double Prcple_GF[2] = { CLight / GPS_L2 - CLight / GPS_L1,CLight / BDS_B3I - CLight / BDS_B1I };
+	double l = 0.0;//MW组合值波长
+	double s = 0.0;//dGF标准
+	bool errFlag = false;
 	for (i = 0; i < Obs->SatNum; i++)
 	{
+		errFlag = true;
+		double Formlocktime[2] = { 0.0,0.0 };
 		if (Obs->Satobs[i].System == UNKS) continue;/*If the satellite does not belong to GPS or BDS, skip it directly*/
-		DTCycleSlipIni(&Obs->Satobs[i]);/*Preliminary quality inspection according to internal quality standards*/
+		if (Obs->Satobs[i].System == GPS)
+		{
+			memcpy(Formlocktime, Obs->FormLocktime + 2 * Obs->Satobs[i].Prn, 2 * sizeof(double));
+		}
+		else if (Obs->Satobs[i].System == BDS)
+		{
+			memcpy(Formlocktime, Obs->FormLocktime + 2 * Obs->Satobs[i].Prn+2*MAXGPSNUM , 2 * sizeof(double));
+		}
+		DTCycleSlipIni(&Obs->Satobs[i],Formlocktime,errFlag);/*Preliminary quality inspection according to internal quality standards*/
 
 		/*First judge whether the pseudorange and phase data are complete*/
 		if (Obs->Satobs[i].fFlag[0]==0 || Obs->Satobs[i].fFlag[1] == 0)
 		{
 			Obs->Satobs[i].Valid = false;  //The validity of the satellite position is not related to the cycle slip, so the validity of the satellite position will not be judged in the future
-			Obs->SatPvT[i].Valid = false;
+			//Obs->SatPvT[i].Valid = false;
 			continue;
 		}
-		else if(Obs->Satobs[i].fFlag[0] == -1 || Obs->Satobs[i].fFlag[1] == -1)
-		{
-			continue;
-		}
-		Obs->Satobs[i].Valid = true;
-		Obs->SatPvT[i].Valid = true;//If OBS observation data is available, the satellite position can be calculated with certainty.
+		Obs->Satobs[i].Valid = errFlag;
+		//Obs->SatPvT[i].Valid = true;//If OBS observation data is available, the satellite position can be calculated with certainty.
+				/*MW and GF values are calculated according to the system type*/
+		CalMWGFPIF<MWGF, SATOBSDATA>(Com_Cur[i], Obs->Satobs[i]);
 		Com_Cur[i].Prn = Obs->Satobs[i].Prn;
 		Com_Cur[i].Sys = Obs->Satobs[i].System;
 		Com_Cur[i].n = 1;
-		/*MW and GF values are calculated according to the system type*/
-		CalMWGFPIF<MWGF,SATOBSDATA>(Com_Cur[i], Obs->Satobs[i]);
+		l = (Com_Cur[i].Sys == GPS) ? Lambda_MW[0] : Lambda_MW[1];
+		s = (Com_Cur[i].Sys == GPS) ? Prcple_GF[0] : Prcple_GF[1];
+
 		FindFlag = false;
 		for (j = 0; j < MAXCHANNUM; j++)
 		{
@@ -260,20 +274,23 @@ void DetectOutlier(EPOCHOBSDATA* Obs)
 		if(FindFlag)
 		{
 			dGF = Com_Cur[i].GF - Obs->ComObs[j].GF;
-			dMW = Com_Cur[i].MW - Obs->ComObs[j].MW;/*The difference dMW is calculated first, and then the current epoch smoothing value of MW is calculated and stored*/
-			if (fabs(dGF) < 5e-2 && fabs(dMW) < 3)
+			dMW_N = Com_Cur[i].MW/l - Obs->ComObs[j].MW/l;/*The difference dMW is calculated first, and then the current epoch smoothing value of MW is calculated and stored*/
+			if (TurboEdit(dMW_N, dGF, Obs->ComObs[j].Ntheta, s,errFlag))
 			{
 				//Obs->SatPvT[i].Valid = true;
-				Obs->Satobs[i].fFlag[0]= Obs->Satobs[1].fFlag[1] = 1;
+				Obs->Satobs[i].fFlag[0]= Obs->Satobs[i].fFlag[1] = 1;
 				Obs->ComObs[i].Prn = Obs->ComObs[j].Prn;
 				Obs->ComObs[i].Sys = Obs->ComObs[j].Sys;
-				Obs->ComObs[i].MW = (Obs->ComObs[j].n * Obs->ComObs[j].MW + Com_Cur[i].MW) / (Obs->ComObs[j].n + 1);
-				Obs->ComObs[i].GF = Com_Cur[i].GF;
 				Obs->ComObs[i].n = Obs->ComObs[j].n + 1;
+				Obs->ComObs[i].Ntheta = Obs->ComObs[j].Ntheta + (pow(Com_Cur[i].MW / l - Obs->ComObs[j].MW / l,2) - Obs->ComObs[j].Ntheta) / Obs->ComObs[i].n;
+				Obs->ComObs[i].MW = (Obs->ComObs[j].n * Obs->ComObs[j].MW + Com_Cur[i].MW) / ((double)Obs->ComObs[j].n + 1.0);
+				Obs->ComObs[i].GF = Com_Cur[i].GF;
 				Obs->ComObs[i].PIF = Com_Cur[i].PIF;//In order to align with the PRN order of obs, here is arranged in the order of obs
 			}
 			else/*At this point, a weekly slip has occurred, and the combined MW value should start a new smoothing*/
 			{
+				Obs->Satobs[i].Valid = errFlag;
+				//Obs->SatPvT[i].Valid = errFlag;
 				//Obs->SatPvT[i].Valid = true;
 				Obs->Satobs[i].fFlag[0] = Obs->Satobs[i].fFlag[1] = -1;
 				Obs->ComObs[i].Prn = Com_Cur[i].Prn;
@@ -281,6 +298,7 @@ void DetectOutlier(EPOCHOBSDATA* Obs)
 				Obs->ComObs[i].MW = Com_Cur[i].MW;
 				Obs->ComObs[i].GF = Com_Cur[i].GF;
 				Obs->ComObs[i].n =  1;
+				Obs->ComObs[i].Ntheta = 0.15;
 				Obs->ComObs[i].PIF = Com_Cur[i].PIF;  //PIF has nothing to do with whether a cycle slip occurs or not
 			}
 			if (i != j)
@@ -297,9 +315,10 @@ void DetectOutlier(EPOCHOBSDATA* Obs)
 		}
 		//memset(Obs->Satobs+i, 0, sizeof(SATOBSDATA));
 	}
+	memset(Obs->FormLocktime, 0.0, 2 * MAXCHANNUM * sizeof(double));
 }
 void ComputeSatPVTAtSignalTrans( EPOCHOBSDATA* Epk, GPSEPHREC* GPSEph, GPSEPHREC* BDSEph, double UserPos[], bool flag)
-//flag is the flag that has initialized the coordinates of the receiver station, and the satellite altitude angle can be removed if the satellite altitude angle is less than 15锟斤拷
+//flag is the flag that has initialized the coordinates of the receiver station, and the satellite altitude angle can be removed if the satellite altitude angle is less than 15°
 {
 	extern ROVERCFGINFO CFGINFO;
 	GPSTIME t_tr, t_r;/*The surface of the signal is equal when the satellite receives it*/
@@ -315,25 +334,23 @@ void ComputeSatPVTAtSignalTrans( EPOCHOBSDATA* Epk, GPSEPHREC* GPSEph, GPSEPHREC
 		EphExistFlag=AlignEphObs(Epk->Satobs + i, GPSEph, BDSEph, &NeedEph);
 		if (!EphExistFlag)//If the satellite ephemeris does not exist, it will enter the next cycle
 		{
-			Epk->SatPvT[i].Valid = false;
+			Epk->Satobs[i].Valid = false;
 			continue;
 		}
 		EphTimeflag = JudgeEphEffect(Epk->Satobs[i].System, Epk->Time, NeedEph);
 		if (!EphTimeflag)//If the satellite ephemeris does not exist, it will enter the next cycle
 		{
-			Epk->SatPvT[i].Valid = false;
+			Epk->Satobs[i].Valid = false;
 			continue;
 		}
-		if (Epk->SatPvT[i].Valid == false)
+
+		if (Epk->Satobs[i].Valid == false)
 		{
 			/*cout << "no Sat Obs" << endl;*/
-			continue;
-		}
-		if (flag == true && Epk->SatPvT[i].Elevation < CFGINFO.ElevThreshold)
-		{
 			Epk->SatPvT[i].Valid = false;
 			continue;
 		}
+
 		for (int j = 0; j < 3; j++)//Iterate three times to calculate the correct time of satellite launch
 		{
 			P = Epk->Satobs[i].P[index];
@@ -357,6 +374,11 @@ void ComputeSatPVTAtSignalTrans( EPOCHOBSDATA* Epk, GPSEPHREC* GPSEph, GPSEPHREC
 		CompSatClkOff(&t_tr, &NeedEph, &deltaT_j, true);/*Consider Relativistic effects*/
 		EarthRotateCorrect(Epk->Satobs[i].System, &deltaT_j, UserPos);/*Earth's rotation corrected*/
 		memcpy(Epk->SatPvT+i, &deltaT_j, sizeof(SATMIDRES));/*copy result*/
+		if (flag == true && Epk->SatPvT[i].Elevation < CFGINFO.ElevThreshold)//截止高度角部分
+		{
+			Epk->SatPvT[i].Valid = false;
+			continue;
+		}
 		Epk->SatPvT[i].Valid = true;
 	}
 }
@@ -364,7 +386,7 @@ bool SPP(EPOCHOBSDATA* Epoch, GPSEPHREC* GPSEph, GPSEPHREC* BDSEph, POSRES* Res)
 {
 	extern ROVERCFGINFO CFGINFO;
 	LSQ ls;
-	int t;//Total number of observations, number of necessary observations
+	int s, t;//Total number of observations, number of necessary observations
 	//ofstream outfile;
 	bool flag =false; //Position Initialization Flag
 	//outfile.open("result.txt", ios::app);
@@ -394,40 +416,40 @@ bool SPP(EPOCHOBSDATA* Epoch, GPSEPHREC* GPSEph, GPSEPHREC* BDSEph, POSRES* Res)
 
 	do
 	{
-		memset(&ls, 0, sizeof(LSQ));
+		LSQDstroy(ls);
 		ComputeSatPVTAtSignalTrans(Epoch, GPSEph, BDSEph, X0_R, flag);
 		SPPintputB(ls.B, Epoch, X0_R);
-		//B.MatrixDis();
-		int Prow = ls.B.row;/*The P-matrix is set to a unit matrix*/
-		if(Prow<4)  
-		{
-			cout << "The number of satellites is insufficient, and the SPP solution fails" << endl;
-			cout << endl;
-			return false;
-		}
-		ls.P.MatrixResize(Prow, Prow);
-		InputP(Prow, Epoch, false, ls.P);
-		//P.MatrixDis();
-		SPPinputW(ls.W, Epoch, X0_R);
-		//W.MatrixDis();
-		Res->SatNum = Prow;
-		LSQCalx(ls.B, ls.P, ls.W, ls.x, ls.Q);
-		X0_R[0] = X0_R[0] + ls.x(0, 0); 
-		X0_R[1] = X0_R[1] + ls.x(1, 0);
-		X0_R[2] = X0_R[2] + ls.x(2, 0);
-		Res->Valid = true;
-		if (i >= 5 && fabs(ls.x(0,0)+ ls.x(1, 0)+ ls.x(2, 0))>1e-2)
-		{
-			cout << "SPP LSQ did not converge, and the positioning solution failed" << endl;
-			Res->Valid = false;
-			return false;
-		}
-		if (i > 0)
-		{
-			flag = CFGINFO.EmaFlag ;//Check whether the iteration has been initialized
-		}
-		i++;
-	} while (fabs(ls.x(0, 0) + ls.x(1, 0) + ls.x(2, 0) ) > 1e-5);
+			//B.MatrixDis();
+			int Prow = ls.B.row;/*The P-matrix is set to a unit matrix*/
+			if(Prow<4)  
+			{
+				cout << "The number of satellites is insufficient, and the SPP solution fails" << endl;
+				cout << endl;
+				return false;
+			}
+			ls.P.MatrixResize(Prow, Prow);
+			InputP(Prow, Epoch, false, ls.P);
+			//P.MatrixDis();
+			SPPinputW(ls.W, Epoch, X0_R);
+			//W.MatrixDis();
+			Res->SatNum = Prow;
+			LSQCalx(ls.B, ls.P, ls.W, ls.x, ls.Q);
+			X0_R[0] = X0_R[0] + ls.x(0, 0); 
+			X0_R[1] = X0_R[1] + ls.x(1, 0);
+			X0_R[2] = X0_R[2] + ls.x(2, 0);
+			Res->Valid = true;
+			if (i >= 5 && fabs(ls.x(0,0)+ ls.x(1, 0)+ ls.x(2, 0))>1e-2)
+			{
+				cout << "SPP LSQ did not converge, and the positioning solution failed" << endl;
+				Res->Valid = false;
+				return false;
+			}
+			if (i > 0)
+			{
+				flag = CFGINFO.EmaFlag ;//Check whether the iteration has been initialized
+			}
+			i++;
+		} while (fabs(ls.x(0, 0) + ls.x(1, 0) + ls.x(2, 0) ) > 1e-5);
 	deltaT_r1 = deltaT_r1 + ls.x(3, 0);
 	t = 4;
 	if (ls.x.row > 4)//When there is a clock difference in BDS
@@ -447,6 +469,7 @@ bool SPV(EPOCHOBSDATA* Epoch, POSRES* Res)
 {
 	/*A system of linear equations without iteration*/
 	LSQ ls;
+	int s, t;
 	SPVInputB(ls.B, Epoch, Res);
 	SPVInputW(ls.W,Epoch, Res);
 	int Prow = ls.B.row;

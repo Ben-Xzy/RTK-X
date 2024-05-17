@@ -4,15 +4,13 @@
 #include"math.h"
 #include"string.h"
 #include<iostream>
-
+#include"param.h"
 class XMatrix 
 {
 public:
-	
 	int row;
 	int col;
 	std::vector <double>  matrix;
-
 	XMatrix(double value[], int row1, int col1);
 	XMatrix(int row1, int col1);
 	XMatrix();

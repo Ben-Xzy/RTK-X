@@ -18,12 +18,11 @@ int main()
 	POSRES RovSppRes;
 	POSRES BasSppRes;
 	RTKEKF ekf;
-	XMatrix ekfP;
 	FILE* fb=NULL;
 	FILE* fr=NULL;
 	SOCKET NetGpsBas, NetGpsRov;
 	ofstream outfile;
-	string ConfigFile = "../../config/config.ini";
+	string ConfigFile = "config.ini";
 	if (!rr::GetCfgInfo(CFGINFO, ConfigFile))
 	{
 		cout << "Config file load failed!" << endl;
@@ -39,6 +38,8 @@ int main()
 	int Recordflag = 0;
 	bool SuccFlag = true;
 	int RtkFlag=0;
+	bool realPosflag = false;
+	int iter = 0;
 	if (CFGINFO.IsFileData == "file")
 	{
 		fb = fopen(CFGINFO.BasObsDatFile.c_str(), "rb");
@@ -67,7 +68,10 @@ int main()
 			return 0;
 		}
 	}
-
+	//BasSppRes.RealPos[0] = -2267806.1676;
+	//BasSppRes.RealPos[1] = 5009345.5601;
+	//BasSppRes.RealPos[2] = 3220997.5054;
+	//BasSppRes.realPosFlag = true;
 	while (1)     
 	{
 		if (CFGINFO.IsFileData == "file")
@@ -81,7 +85,7 @@ int main()
 
 		if(RtkFlag==1)
 		{
-			cout << "Time has syn" << endl;
+			//cout << "Time has syn" << endl;
 		}
 		else if (RtkFlag == 0)
 		{
@@ -95,45 +99,64 @@ int main()
 		DetectOutlier(&rawdata.RovEpk);
 		DetectOutlier(&rawdata.BasEpk);
 		SuccFlag = SPP(&rawdata.RovEpk, rawdata.GpsEph, rawdata.BdsEph, &RovSppRes);
+		//cout << rawdata.RovEpk.Time.SecOfWeek << endl;
 		if (!SuccFlag)
 		{
 			continue;
 		}
 		SPV(&rawdata.RovEpk, &RovSppRes);
-		//OutPutResult(&rawdata.RovEpk, RovSppRes, outfile, Recordflag);
+		//OutPutResult(&rawdata.RovEpk, RovSppRes, outfile, Recordflag);//ostream×÷Îªº¯Êý²ÎÊýÊ±±ØÐë²ÉÓÃÒýÓÃ´«µÝ
 		SPP(&rawdata.BasEpk, rawdata.GpsEph, rawdata.BdsEph, &BasSppRes);
-		if (BasSppRes.RealPos[0] == 0.0)
+		if (!BasSppRes.realPosFlag)
 		{
-			cout << "No bestPos, use Bas result of SPP" << endl;
+			cout << "No bestPos£¬use Bas result of SPP" << endl;
 			memcpy(BasSppRes.RealPos, BasSppRes.Pos, 3 * sizeof(double));
+			if (iter > 5)
+			{
+				BasSppRes.realPosFlag = true;
+			}
+		}
+		if ((!realPosflag) && BasSppRes.realPosFlag)
+		{
+			outfile.flags(ios::fixed);
+			outfile.precision(4);
+			outfile << "% ref pos   :" << BasSppRes.RealPos[0] << "   " << BasSppRes.RealPos[1] << "   " << BasSppRes.RealPos[2] << endl;
+			realPosflag = true;
+			outfile << "%"<<endl;
+			outfile << "% (x/y/z-ecef=WGS84,Q=1:fix,2:float,3:sbas,4:dgps,5:single,6:ppp,ns=# of satellites)" << endl;
+			outfile << "%  GPST                      x-ecef(m)      y-ecef(m)      z-ecef(m)   Q  ns   sdx(m)   sdy(m)   sdz(m)  sdxy(m)  sdyz(m)  sdzx(m) age(s)  ratio" << endl;
 		}
 		//SPV(&rawdata.BasEpk, &BasSppRes);
-		cout << endl;
+		//cout << endl;
 		CalStaSinDif(&rawdata.BasEpk,&rawdata.RovEpk,&BasSppRes,&RovSppRes,&rawdata.SdObs);
 		DTSinDifCySlip(&rawdata.BasEpk, &rawdata.RovEpk, &rawdata.SdObs);
-		CalStaDouDif(&rawdata.RovEpk, &rawdata.SdObs, &rawdata.DDObs);
+		CalStaDouDif(&rawdata.RovEpk, &rawdata.SdObs, &rawdata.DDObs);/*²»ÒªÍü¼Ç°ÑDDObsµÄÁÐ±í¸øclearµô*/
 		if(CFGINFO.RTKProcMode == "LSQ")
 		{ 
 			RTK(&rawdata.RovEpk, &rawdata.BasEpk,&RovSppRes,&BasSppRes, &rawdata.DDObs);
-			OutputRTK(rawdata.BasEpk.Time, rawdata.DDObs, outfile, "enu");
+			LibOutput(rawdata.BasEpk.Time, rawdata.DDObs, outfile, RovSppRes);
+			//OutputRTK(rawdata.BasEpk.Time, rawdata.DDObs, outfile,"enu", RovSppRes);
 		}
 		//OutputRTK(rawdata.BasEpk.Time, rawdata.DDObs, outfile,"xyz");
-		//OutPutResult(&rawdata.RovEpk, RovSppRes, outfile, Recordflag);//ostreamï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã´ï¿½ï¿½ï¿½
+		//OutPutResult(&rawdata.RovEpk, RovSppRes, outfile, Recordflag);//ostream×÷Îªº¯Êý²ÎÊýÊ±±ØÐë²ÉÓÃÒýÓÃ´«µÝ
 		if (CFGINFO.RTKProcMode == "EKF")
 		{
 			if (!ekf.IsInit)
 			{
-				EKFinitial(&ekf, &rawdata.DDObs, &RovSppRes, ekfP);
+				EKFinitial(&ekf, &rawdata.DDObs, &RovSppRes, ekf.P);
 			}
 			else
 			{
-				EKF(&ekf, &rawdata.DDObs, &RovSppRes, &BasSppRes, ekfP, &rawdata.RovEpk, &rawdata.BasEpk);
-				OutputRTK(rawdata.BasEpk.Time, rawdata.DDObs, outfile, "xyz");
+				EKF(&ekf, &rawdata.DDObs, &RovSppRes, &BasSppRes, ekf.P, &rawdata.RovEpk, &rawdata.BasEpk);
+				LibOutput(rawdata.BasEpk.Time, rawdata.DDObs, outfile,ekf);
+				//OutputRTK(rawdata.BasEpk.Time, rawdata.DDObs, outfile, "enu", RovSppRes);
 			}
 		}
 		DDReini(&rawdata.DDObs);
-		memset(&rawdata.SdObs, 0, sizeof(SDEPOCHOBS));
+		SDObsReIni(&rawdata.SdObs);
+		iter++;
 	}
 	closesocket(NetGpsBas);
 	closesocket(NetGpsRov);
+	delete fb, fr;
 }

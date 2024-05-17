@@ -11,7 +11,7 @@ void OutPutResult(EPOCHOBSDATA* EachObs, POSRES Res, ofstream& outfile, int flag
 	BLH[1] = BLH[1] * deg;
 	if (flag == 0)
 	{
-		cout << "Ephemeral:";
+		cout << "ภ๚ิช:";
 		cout << EachObs->Time.Week << " " << EachObs->Time.SecOfWeek << " ";
 		cout.flags(ios::fixed);
 		cout.precision(4);
@@ -22,7 +22,7 @@ void OutPutResult(EPOCHOBSDATA* EachObs, POSRES Res, ofstream& outfile, int flag
 		cout.precision(4);
 		cout << " VX:" << std::left << std::setw(7) << Res.Vel[0] << " VY:" << std::left << std::setw(7) << Res.Vel[1] << " VZ:" << std::left << std::setw(7) << Res.Vel[2] << " ";
 		cout << " PDOP:" << std::left << std::setw(7) << Res.PDOP << " SigmaP:" << std::left << std::setw(7) << Res.SigmaPos << " SigmaV:" << std::left << std::setw(7) << Res.SigmaVel;
-		if (Res.realPosValid)
+		if (Res.realPosFlag)
 		{
 			cout << " DE:" << std::left << std::setw(7) << enu.dEnu[0] << " DN:" << enu.dEnu[1] << " DU:" << enu.dEnu[2] << " ";
 		}
@@ -35,7 +35,7 @@ void OutPutResult(EPOCHOBSDATA* EachObs, POSRES Res, ofstream& outfile, int flag
 		outfile << EachObs->Time.Week << " " << EachObs->Time.SecOfWeek << " ";
 		//outfile << Res.Pos[0] << "   " << Res.Pos[1] << "   " << Res.Pos[2] << "   ";
 		//outfile << Res.Vel[0] << "   " << Res.Vel[1] << "   " << Res.Vel[2] << "   ";
-		if (Res.realPosValid)
+		if (Res.realPosFlag)
 		{
 			cout << enu.dEnu[0] << "   " << enu.dEnu[1] << "   " << enu.dEnu[2] << "   ";
 			outfile << enu.dEnu[0] << " " << enu.dEnu[1] << " " << enu.dEnu[2] << " ";
@@ -54,29 +54,40 @@ void OutPutResult(EPOCHOBSDATA* EachObs, POSRES Res, ofstream& outfile, int flag
 	}
 	else { cout << "instructions error!" << endl; }
 }
-void OutputRTK(GPSTIME T,DDCEPOCHOBS D,ofstream& outfile,string s)
+void OutputRTK(GPSTIME T,DDCEPOCHOBS D,ofstream& outfile, string s ,POSRES& r)
 {
+	 int nG, nB = 0;
+	 nG = (D.DDSatNum[0] == 0) ? 0 : (D.DDSatNum[0] + 1);
+	 nB = (D.DDSatNum[1] == 0) ? 0 : (D.DDSatNum[1] + 1);
 	 cout.flags(ios::fixed);
 	 outfile.flags(ios::fixed);
 	 outfile.precision(4);
 	 outfile << T.Week << " " << T.SecOfWeek << " ";
+	 cout.precision(1);
 	 cout << T.Week << " " << T.SecOfWeek << " ";
+	 cout.precision(5);
 	 if (s == "enu")
 	 {
-		 cout << " dE: " << D.denu[0] << "   dN: " << D.denu[1] << "   dU: " << D.denu[2] << "   Ratio: " << D.Ratio;
+		 cout << " dE:" << setw(9) << D.denu[0] << "   dN:"  << D.denu[1] << "   dU:" << D.denu[2] << "   Ratio:" << D.Ratio << "   nG:";
+		 cout << setw(2) << setfill('0') << nG << "   nB:";
+		 cout << setw(2) << setfill('0') << nB;
+		 cout << "  PDop:" << r.PDOP;
 		 outfile.precision(8);
 		 outfile << D.denu[0] << " " << D.denu[1] << " " << D.denu[2] << " " << D.Ratio;
 		 outfile << endl;
 	 }
 	 else if (s == "xyz")
 	 {
-		 cout << " dX: " << D.dPos[0] << "   dY: " << D.dPos[1] << "   dZ: " << D.dPos[2] << "   Ratio: " << D.Ratio;
+		 cout << " dX:" << D.dPos[0] << "   dY:" << D.dPos[1] << "   dZ:" << D.dPos[2] << "   Ratio:" << D.Ratio << "   nG:";
+		 cout << setw(2) << setfill('0') << nG << "   nB:";
+		 cout << setw(2) << setfill('0') << nB;
+		 cout << "  PDop:" << r.PDOP;
 		 outfile.precision(8);
 		 outfile << D.dPos[0] << " " << D.dPos[1] << " " << D.dPos[2] << " " << D.Ratio;
 		 outfile << endl;
 	 }
 	 string ss[2] = { "G","C" };
-	 cout << " ref Sat PRN: ";
+	 cout << "      ref Sat PRN: ";
 	 for (int i = 0; i < 2; i++)
 	 {
 		 if (D.RefPrn[i] != -1)
@@ -85,4 +96,59 @@ void OutputRTK(GPSTIME T,DDCEPOCHOBS D,ofstream& outfile,string s)
 		 }
 	 }
 	 cout << endl;
+}
+void LibOutput(GPSTIME t, DDCEPOCHOBS &D, ofstream& outfile, RTKEKF &e)
+{
+	JDTIME t_j;
+	GPST2JD(&t, &t_j);
+	COMMONTIME t_c;
+	JD2Com(&t_j, &t_c);
+	outfile.flags(ios::fixed);
+	outfile.precision(3);
+	//cout << t_c.Year << "/" << t_c.Month << "/" << t_c.Day << " " << t_c.Hour << ":" << t_c.Minute << ":" << t_c.Second << " ";
+	outfile << t_c.Year << "/";
+	outfile << setw(2) << setfill('0') << t_c.Month << "/";
+	outfile << setw(2) << setfill('0') << t_c.Day << " ";
+	outfile << setw(2) << setfill('0') << t_c.Hour << ":";
+	outfile << setw(2) << setfill('0') << t_c.Minute << ":";
+	outfile << fixed <<setw(6) << setfill('0') << t_c.Second << "  ";
+
+	outfile.precision(4);
+	outfile << e.X[0] << "  " << e.X[1] << "  " << e.X[2] << "   ";
+	if (D.Ratio > 3.0)
+	{
+		outfile << "1" << "  ";
+	}
+	else { outfile << "2" << "   "; }
+	outfile << 2 * e.nSats << "   ";
+	outfile << e.P(0, 0) << "   " << e.P(1, 1) << "   " << e.P(2, 2) << "   " << e.P(0, 1) << "   " << e.P(1, 2) << "   " << e.P(0, 2) << "   ";
+	outfile << "0.00" << "    " << D.Ratio << endl;
+
+}
+void LibOutput(GPSTIME t, DDCEPOCHOBS& D, ofstream& outfile, POSRES& r)
+{
+	JDTIME t_j;
+	GPST2JD(&t, &t_j);
+	COMMONTIME t_c;
+	JD2Com(&t_j, &t_c);
+	outfile.flags(ios::fixed);
+	outfile.precision(3);
+	//cout << t_c.Year << "/" << t_c.Month << "/" << t_c.Day << " " << t_c.Hour << ":" << t_c.Minute << ":" << t_c.Second << " ";
+	outfile << t_c.Year << "/";
+	outfile << setw(2) << setfill('0') << t_c.Month << "/";
+	outfile << setw(2) << setfill('0') << t_c.Day << " ";
+	outfile << setw(2) << setfill('0') << t_c.Hour << ":";
+	outfile << setw(2) << setfill('0') << t_c.Minute << ":";
+	outfile << fixed << setw(6) << setfill('0') << t_c.Second << "  ";
+
+	outfile.precision(4);
+	outfile << r.Pos[0] << "  " << r.Pos[1] << "  " << r.Pos[2] << "   ";
+	if (D.Ratio > 3.0)
+	{
+		outfile << "1" << "  ";
+	}
+	else { outfile << "2" << "   "; }
+	outfile << 2 * D.Sats << "   ";
+	outfile << "0.00" << "   " << "0.00" << "   " << "0.00" << "   " << "0.00" << "   " << "0.00" << "   " << "0.00" << "   ";
+	outfile << "0.00" << "    " << D.Ratio << endl;
 }

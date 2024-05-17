@@ -23,4 +23,5 @@ int ReadBestPOS(unsigned char* buff, POSRES* posres);
 //int DecodeNovOem7Dat(char* filename, EPOCHOBSDATA* obs, GPSEPHREC GPSep[], GPSEPHREC BDSep[]);
 int DecodeNovOem7Dat(unsigned char Buff[], int& Len,EPOCHOBSDATA* obs, GPSEPHREC GPSep[], GPSEPHREC BDSep[],POSRES *posres);
 void JudgeFreq(EPOCHOBSDATA* Epoch);
+void GetFormlock(EPOCHOBSDATA* s);
 #endif

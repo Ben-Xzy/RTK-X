@@ -179,7 +179,7 @@ bool XMatrix::MatrixInv()//Inversion of the matrix
 		for (k = 0; k < n; k++)
 		{
 			d = 0.0;
-			for (i = k; i < n; i++)   /*Find the location of the main element in the square in the lower right corner */
+			for (i = k; i < n; i++)   /* Find the location of the main element in the square in the lower right corner*/
 			{
 				for (j = k; j < n; j++)
 				{
@@ -194,13 +194,13 @@ bool XMatrix::MatrixInv()//Inversion of the matrix
 				}
 			}
 
-			if (d < DBL_EPSILON)   /* The main element is close to 0 and the matrix is irreversible*/
+			if (d < DBL_EPSILON)   /* The main element is close to 0 and the matrix is irreversible */
 			{
 				printf("Divided by 0 in MatrixInv!\n");
 				return 0;
 			}
 
-			if (is[k] != k)  /*Swap the row of the main element with the first row of the square in the lower right corner*/
+			if (is[k] != k)  /* Swap the row of the main element with the first row of the square in the lower right corner */
 			{
 				for (j = 0; j < n; j++)
 				{
@@ -212,7 +212,7 @@ bool XMatrix::MatrixInv()//Inversion of the matrix
 				}
 			}
 
-			if (js[k] != k)  /* Swap the column where the main element is located with the first column of the square in the lower right corner*/
+			if (js[k] != k)  /* Swap the column where the main element is located with the first column of the square in the lower right corner */
 			{
 				for (i = 0; i < n; i++)
 				{
@@ -258,7 +258,7 @@ bool XMatrix::MatrixInv()//Inversion of the matrix
 			}
 		}
 
-		for (k = n - 1; k >= 0; k--)  /* Swap the rows and columns above to resume again*/
+		for (k = n - 1; k >= 0; k--)  /* Swap the rows and columns above to resume again */
 		{
 			if (js[k] != k)
 			{
@@ -402,7 +402,7 @@ bool XMatrix::MatrixTrans()
 	{
 	num = this->col;
 	MatrixResize(num , num);
-	}           //The number of shilling rows and columns becomes consistent
+	}           //先令行列数变为一致
 	for (int i = 0; i < num; i++)
 	{
 		for (int j = i; j < num; j++)
@@ -412,7 +412,7 @@ bool XMatrix::MatrixTrans()
 			this->matrix[j * num + i] = TransTemp;
 		}
 	}
-	//if (col > row)//The extra slots are filled with 0
+	//if (col > row)//If the number of columns is greater than the number of rows, you need to delete some of the interchangeable columns
 	//{
 	//	for (int m = 0; m < this->row; m++)
 	//	{
@@ -439,24 +439,31 @@ void XMatrix::MatrixResize(int Corrow,int Corcol)
 	matrix.resize(this->col * this->row);//Improve fault tolerance and prevent the matrix from being initialized
 	/*Handle the columns first*/
 	int ColIndex = Corcol - this->col;//If ColIndex >0, it is equivalent to an expanded column, and vice versa
-	if (ColIndex > 0)//expand col
+	if (ColIndex > 0)//expand row
 	{
 		for (int m = 0; m < this->row; m++)
 		{
 			for (int n = 0; n < ColIndex; n++)
 			{
-				this->matrix.insert(this->matrix.begin() + (m +1)*this->col+m*ColIndex , 0);
+				if (m == this->row - 1)
+				{
+					this->matrix.push_back(0);
+				}
+				else
+				{
+					this->matrix.insert(this->matrix.begin() + (m + 1) * this->col + m * ColIndex, 0);
+				}
 			}
 		}
 	}
-	else//mius col
+	else if(ColIndex<0)//mius col
 	{
 		ColIndex = -ColIndex;
 		for (int m = 0; m < this->row; m++)
 		{
 			for (int n = 0; n <ColIndex; n++)
 			{
-				if (m * Corcol + this->col - 1 - n == this->matrix.size() - 1)
+				if (m == this->row - 1)//最后一行特殊处理
 				{
 					this->matrix.pop_back();
 				}
@@ -491,6 +498,7 @@ void MatrixInv(int n, double Z[], double ZT[])
 }
 void Matrix2Array(XMatrix X, double *a)
 {
+
 	for (int i = 0; i < X.row; i++)
 	{
 		for (int j = 0; j < X.col; j++)
